@@ -9,6 +9,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { Lead } from '../lib/types';
 import { appointmentApi } from '../lib/api';
@@ -112,7 +113,7 @@ export default function BookDriveModal({
               <Text style={styles.subtitle}>Dispatch allocation & fleet check</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Ionicons name="close" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -251,14 +252,8 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
-  closeBtn: {
-    padding: Spacing.xs,
-  },
-  closeBtnText: {
-    fontSize: 20,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center' },
+  closeBtnText: {},  // deprecated - using Ionicons directly
   body: {
     padding: Spacing.lg,
   },

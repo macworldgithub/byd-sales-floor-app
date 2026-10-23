@@ -1,10 +1,12 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi, getToken, clearToken } from './api';
 
-interface AuthUser {
+export interface AuthUser {
   email: string;
   name: string;
   role: string;
+  location?: string;
+  phone?: string;
   token?: string;
 }
 
@@ -14,6 +16,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (data: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,9 +32,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (token) {
           // Restore from stored token - in a real app you'd validate the token
           setUser({
-            email: 'alex.rivers@byd.com',
+            email: 'admin@byd.com',
             name: 'Alex Rivers',
             role: 'super_admin',
+            location: 'Melbourne CBD',
+            phone: '+61 412 345 678',
             token,
           });
         }
@@ -51,6 +56,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         email: res.user?.email || email,
         name: res.user?.name || 'Alex Rivers',
         role: res.user?.role || 'super_admin',
+        location: 'Melbourne CBD',
+        phone: '+61 412 345 678',
         token: res.token,
       };
       setUser(userData);
@@ -61,6 +68,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           email,
           name: 'Alex Rivers',
           role: 'super_admin',
+          location: 'Melbourne CBD',
+          phone: '+61 412 345 678',
         };
         setUser(userData);
       } else {
@@ -74,6 +83,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const updateUser = (data: Partial<AuthUser>) => {
+    setUser((prev) => (prev ? { ...prev, ...data } : null));
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -82,6 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         logout,
+        updateUser,
       }}
     >
       {children}

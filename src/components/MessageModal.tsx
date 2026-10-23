@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { Lead, ConversationThread } from '../lib/types';
 import { messageApi } from '../lib/api';
@@ -76,7 +77,7 @@ export default function MessageModal({
               {lead?.phone && <Text style={styles.headerPhone}>{lead.phone}</Text>}
             </View>
             <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Ionicons name="close" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -109,7 +110,7 @@ export default function MessageModal({
 
             {/* ACMA Badge */}
             <View style={styles.acmaBadge}>
-              <Text style={styles.acmaText}>🛡 ACMA Opt-Out Suppression Active · Australian Spam Act Compliant</Text>
+              <Ionicons name="shield-checkmark-outline" size={12} color="#10b981" style={{ marginRight: 4 }} /><Text style={styles.acmaText}>ACMA Opt-Out Suppression Active · Australian Spam Act Compliant</Text>
             </View>
 
             {/* Quick Templates */}
@@ -143,14 +144,14 @@ export default function MessageModal({
               <View style={styles.composerFooter}>
                 <Text style={styles.charCount}>{message.length} chars</Text>
                 <View style={styles.acmaChip}>
-                  <Text style={styles.acmaChipText}>🛡 Compliant</Text>
+                  <Ionicons name="shield-checkmark" size={11} color="#166534" style={{ marginRight: 3 }} /><Text style={styles.acmaChipText}>Compliant</Text>
                 </View>
               </View>
             </View>
 
             {sendSuccess && (
               <View style={styles.successBanner}>
-                <Text style={styles.successText}>✅ Message sent successfully!</Text>
+                <Ionicons name="checkmark-circle" size={16} color="#10b981" style={{ marginRight: 6 }} /><Text style={styles.successText}>Message sent successfully!</Text>
               </View>
             )}
           </ScrollView>
@@ -173,7 +174,7 @@ export default function MessageModal({
               {isSending ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.sendBtnText}>Send SMS ✈</Text>
+                <><Ionicons name="send-outline" size={14} color="#fff" style={{ marginRight: 6 }} /><Text style={styles.sendBtnText}>Send SMS</Text></>
               )}
             </TouchableOpacity>
           </View>
@@ -199,8 +200,8 @@ const styles = StyleSheet.create({
   headerEyebrow: { color: Colors.textMuted, fontSize: Typography.xs, fontWeight: Typography.bold, letterSpacing: 0.8, textTransform: 'uppercase' },
   headerTitle: { color: Colors.textPrimary, fontSize: Typography.lg, fontWeight: Typography.bold, marginTop: 2 },
   headerPhone: { color: Colors.textSecondary, fontSize: Typography.sm, marginTop: 1 },
-  closeBtn: { padding: Spacing.xs },
-  closeBtnText: { color: Colors.textSecondary, fontSize: Typography.lg },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center' },
+  closeBtnText: {},  // deprecated - using Ionicons directly
 
   body: { flex: 1, padding: Spacing.base },
 

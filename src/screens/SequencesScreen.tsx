@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 
 interface SequencesScreenProps {
@@ -57,7 +58,10 @@ export default function SequencesScreen({ onNavigateTab }: SequencesScreenProps)
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         {/* Intro Card */}
         <View style={styles.introCard}>
-          <Text style={styles.introTitle}>Human-Managed Conversations</Text>
+          <View style={styles.introTitleRow}>
+            <Ionicons name="people-outline" size={18} color={Colors.brand} style={{ marginRight: 8 }} />
+            <Text style={styles.introTitle}>Human-Managed Conversations</Text>
+          </View>
           <Text style={styles.introText}>
             Our team writes, reviews, and sends each customer touchpoint. Automated sequence suggestions pop up in the Priority Queue when SLAs or intervals elapse.
           </Text>
@@ -66,7 +70,9 @@ export default function SequencesScreen({ onNavigateTab }: SequencesScreenProps)
             onPress={() => onNavigateTab('conversations')}
             activeOpacity={0.85}
           >
-            <Text style={styles.introBtnText}>Open Conversations Inbox →</Text>
+            <Ionicons name="chatbubbles-outline" size={14} color={Colors.brand} style={{ marginRight: 6 }} />
+            <Text style={styles.introBtnText}>Open Conversations Inbox</Text>
+            <Ionicons name="arrow-forward" size={14} color={Colors.brand} style={{ marginLeft: 'auto' }} />
           </TouchableOpacity>
         </View>
 
@@ -79,7 +85,10 @@ export default function SequencesScreen({ onNavigateTab }: SequencesScreenProps)
               <View style={styles.codeBadge}>
                 <Text style={styles.codeText}>{seq.code}</Text>
               </View>
-              <Text style={styles.timingText}>{seq.timing}</Text>
+              <View style={styles.timingPill}>
+                <Ionicons name="time-outline" size={11} color={Colors.textMuted} style={{ marginRight: 3 }} />
+                <Text style={styles.timingText}>{seq.timing}</Text>
+              </View>
             </View>
 
             <Text style={styles.seqTitle}>{seq.title}</Text>
@@ -130,6 +139,11 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     ...Shadows.sm,
   },
+  introTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
   introTitle: {
     fontSize: Typography.base,
     fontWeight: Typography.bold,
@@ -144,6 +158,8 @@ const styles = StyleSheet.create({
   introBtn: {
     marginTop: Spacing.md,
     paddingVertical: Spacing.xs + 2,
+    paddingHorizontal: Spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(230,0,18,0.06)',
     borderRadius: BorderRadius.md,
@@ -185,6 +201,10 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 10,
     fontWeight: '800',
+  },
+  timingPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   timingText: {
     fontSize: Typography.xs - 1,

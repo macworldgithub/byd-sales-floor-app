@@ -7,6 +7,7 @@ import {
   TextInput,
   TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { DEFAULT_TEMPLATE_PACKS, TemplatePack, interpolateTemplate } from '../lib/templateEngine';
 
@@ -79,6 +80,7 @@ export default function TemplateStudioScreen() {
           <Text style={styles.headerTitle}>Template Studio</Text>
         </View>
         <TouchableOpacity style={styles.saveBtn} onPress={handleSave} activeOpacity={0.85}>
+          <Ionicons name="save-outline" size={14} color="#fff" style={{ marginRight: 5 }} />
           <Text style={styles.saveBtnText}>Save Pack</Text>
         </TouchableOpacity>
       </View>
@@ -108,9 +110,14 @@ export default function TemplateStudioScreen() {
         {/* Compliance Guard Card */}
         <View style={styles.complianceCard}>
           <View style={styles.complianceRow}>
-            <View style={[styles.complianceDot, { backgroundColor: hasOptOut ? '#10b981' : '#f59e0b' }]} />
+            <Ionicons
+              name={hasOptOut ? 'shield-checkmark-outline' : 'warning-outline'}
+              size={16}
+              color={hasOptOut ? '#10b981' : '#f59e0b'}
+              style={{ marginRight: 6 }}
+            />
             <Text style={styles.complianceText}>
-              {hasOptOut ? 'ACMA Opt-out clause verified ("STOP")' : '⚠️ Missing opt-out tag (e.g. Reply STOP)'}
+              {hasOptOut ? 'ACMA Opt-out clause verified ("STOP")' : 'Missing opt-out tag (e.g. Reply STOP)'}
             </Text>
           </View>
           <Text style={styles.complianceCounter}>
@@ -144,7 +151,8 @@ export default function TemplateStudioScreen() {
                 onPress={() => insertToken(token)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.tokenPillText}>＋ {token}</Text>
+                <Ionicons name="add-circle-outline" size={12} color={Colors.brand} style={{ marginRight: 3 }} />
+                <Text style={styles.tokenPillText}>{token}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -201,6 +209,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.brand,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.xs + 2,
@@ -260,11 +270,7 @@ const styles = StyleSheet.create({
     gap: 6,
     flex: 1,
   },
-  complianceDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
+
   complianceText: {
     fontSize: Typography.xs - 1,
     fontWeight: Typography.semibold,
@@ -310,6 +316,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tokenPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#cbd5e1',

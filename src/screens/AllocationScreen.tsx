@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Modal,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { Lead } from '../lib/types';
 
@@ -51,6 +52,7 @@ export default function AllocationScreen({
       {/* Toast */}
       {toastMessage && (
         <View style={styles.toast}>
+          <Ionicons name="checkmark-circle" size={16} color="#fff" style={{ marginRight: 6 }} />
           <Text style={styles.toastText}>{toastMessage}</Text>
         </View>
       )}
@@ -70,13 +72,19 @@ export default function AllocationScreen({
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         {/* Unassigned Inbound Queue */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>UNASSIGNED QUEUE ({unassignedLeads.length})</Text>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="people-outline" size={14} color={Colors.textMuted} style={{ marginRight: 5 }} />
+            <Text style={styles.sectionTitle}>UNASSIGNED QUEUE ({unassignedLeads.length})</Text>
+          </View>
           <Text style={styles.sectionSubtitle}>Tap a lead to route to an available showroom consultant.</Text>
         </View>
 
         {unassignedLeads.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyCardTitle}>🎉 All Leads Allocated</Text>
+            <View style={styles.emptyIconCircle}>
+              <Ionicons name="checkmark-circle" size={32} color="#10b981" />
+            </View>
+            <Text style={styles.emptyCardTitle}>All Leads Allocated</Text>
             <Text style={styles.emptyCardText}>No incoming prospects are currently awaiting floor assignment.</Text>
           </View>
         ) : (
@@ -103,12 +111,16 @@ export default function AllocationScreen({
               </View>
 
               <View style={styles.slaAlert}>
-                <Text style={styles.slaAlertText}>⚠️ Unallocated · 15m Speed-to-lead SLA ticking</Text>
+                <Ionicons name="warning-outline" size={12} color="#92400e" style={{ marginRight: 4 }} />
+                <Text style={styles.slaAlertText}>Unallocated · 15m Speed-to-lead SLA ticking</Text>
               </View>
 
               <View style={styles.assignRow}>
                 <Text style={styles.assignHint}>Tap to allocate</Text>
-                <Text style={styles.assignAction}>Assign Now →</Text>
+                <View style={styles.assignActionChip}>
+                  <Ionicons name="person-add-outline" size={12} color={Colors.brand} style={{ marginRight: 4 }} />
+                  <Text style={styles.assignAction}>Assign Now</Text>
+                </View>
               </View>
             </TouchableOpacity>
           ))
@@ -116,26 +128,34 @@ export default function AllocationScreen({
 
         {/* Consultant Capacity Board */}
         <View style={[styles.sectionHeader, { marginTop: Spacing.xl }]}>
-          <Text style={styles.sectionTitle}>SHOWROOM CONSULTANT LOAD</Text>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="bar-chart-outline" size={14} color={Colors.textMuted} style={{ marginRight: 5 }} />
+            <Text style={styles.sectionTitle}>SHOWROOM CONSULTANT LOAD</Text>
+          </View>
           <Text style={styles.sectionSubtitle}>Active prospect allocations per floor specialist.</Text>
         </View>
 
         {CONSULTANTS.map((c) => {
           const pct = Math.round((c.leadsCount / c.maxCapacity) * 100);
           const isHigh = pct >= 85;
+          const initials = c.name.split(' ').map(n => n[0]).join('').substring(0, 2);
           return (
             <View key={c.name} style={styles.consultantCard}>
               <View style={styles.consultantHeader}>
                 <View style={styles.consultantAvatar}>
-                  <Text style={styles.consultantAvatarText}>
-                    {c.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
-                  </Text>
+                  <Text style={styles.consultantAvatarText}>{initials}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.consultantName}>{c.name}</Text>
                   <Text style={styles.consultantRole}>{c.role}</Text>
                 </View>
                 <View style={[styles.statusBadge, isHigh ? styles.statusHigh : styles.statusAvail]}>
+                  <Ionicons
+                    name={isHigh ? 'alert-circle-outline' : 'checkmark-circle-outline'}
+                    size={11}
+                    color={isHigh ? '#92400e' : '#166534'}
+                    style={{ marginRight: 3 }}
+                  />
                   <Text style={[styles.statusBadgeText, isHigh ? styles.statusHighText : styles.statusAvailText]}>
                     {c.status}
                   </Text>
@@ -148,7 +168,7 @@ export default function AllocationScreen({
                   <View
                     style={[
                       styles.loadBarFill,
-                      { width: `${pct}%`, backgroundColor: isHigh ? '#f59e0b' : '#10b981' },
+                      { width: `${pct}%` as any, backgroundColor: isHigh ? '#f59e0b' : '#10b981' },
                     ]}
                   />
                 </View>
@@ -168,6 +188,7 @@ export default function AllocationScreen({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalEyebrow}>ALLOCATE PROSPECT</Text>
@@ -177,11 +198,11 @@ export default function AllocationScreen({
                 </Text>
               </View>
               <TouchableOpacity onPress={() => setSelectedLead(null)} style={styles.modalCloseBtn}>
-                <Text style={styles.modalCloseText}>✕</Text>
+                <Ionicons name="close" size={20} color={Colors.textMuted} />
               </TouchableOpacity>
             </View>
 
-            <Text style={styles.modalSelectTitle}>Select Showroom Consultant:</Text>
+            <Text style={styles.modalSelectTitle}>SELECT SHOWROOM CONSULTANT</Text>
 
             <ScrollView style={{ maxHeight: 300 }}>
               {CONSULTANTS.map((c) => (
@@ -191,13 +212,19 @@ export default function AllocationScreen({
                   onPress={() => handleAssign(c.name)}
                   activeOpacity={0.8}
                 >
+                  <View style={styles.consultantSelectAvatar}>
+                    <Text style={styles.consultantAvatarText}>
+                      {c.name.split(' ').map(n => n[0]).join('').substring(0, 2)}
+                    </Text>
+                  </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.selectName}>{c.name}</Text>
                     <Text style={styles.selectDetail}>{c.role} · {c.leadsCount} active leads</Text>
                   </View>
-                  <View style={styles.assignChip}>
+                  <TouchableOpacity style={styles.assignChip} onPress={() => handleAssign(c.name)}>
+                    <Ionicons name="person-add-outline" size={12} color="#fff" style={{ marginRight: 4 }} />
                     <Text style={styles.assignChipText}>Assign</Text>
-                  </View>
+                  </TouchableOpacity>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -245,9 +272,7 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
   },
   routingDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 6, height: 6, borderRadius: 3,
     backgroundColor: '#10b981',
   },
   routingText: {
@@ -260,6 +285,10 @@ const styles = StyleSheet.create({
   contentContainer: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
 
   sectionHeader: { marginBottom: Spacing.sm },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   sectionTitle: {
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
@@ -270,6 +299,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs,
     color: Colors.textSecondary,
     marginTop: 2,
+    marginLeft: 19,
   },
 
   emptyCard: {
@@ -278,6 +308,12 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
     alignItems: 'center',
     ...Shadows.sm,
+  },
+  emptyIconCircle: {
+    width: 60, height: 60, borderRadius: 30,
+    backgroundColor: '#f0fdf4',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: Spacing.md,
   },
   emptyCardTitle: {
     fontSize: Typography.base,
@@ -288,6 +324,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs,
     color: Colors.textSecondary,
     marginTop: 4,
+    textAlign: 'center',
   },
 
   leadCard: {
@@ -305,12 +342,9 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   leadAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 38, height: 38, borderRadius: 19,
     backgroundColor: Colors.dark,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   leadAvatarText: {
     color: '#fff',
@@ -339,6 +373,8 @@ const styles = StyleSheet.create({
     fontWeight: Typography.bold,
   },
   slaAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fffbeb',
     borderRadius: BorderRadius.sm,
     paddingHorizontal: Spacing.sm,
@@ -363,6 +399,14 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs - 1,
     color: Colors.textMuted,
   },
+  assignActionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(230,0,18,0.06)',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
   assignAction: {
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
@@ -383,12 +427,9 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   consultantAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 36, height: 36, borderRadius: 18,
     backgroundColor: '#f1f5f9',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
   consultantAvatarText: {
     color: Colors.textPrimary,
@@ -405,26 +446,20 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: BorderRadius.full,
   },
-  statusAvail: {
-    backgroundColor: '#f0fdf4',
-  },
-  statusHigh: {
-    backgroundColor: '#fffbeb',
-  },
+  statusAvail: { backgroundColor: '#f0fdf4' },
+  statusHigh: { backgroundColor: '#fffbeb' },
   statusBadgeText: {
     fontSize: 10,
     fontWeight: '800',
   },
-  statusAvailText: {
-    color: '#166534',
-  },
-  statusHighText: {
-    color: '#92400e',
-  },
+  statusAvailText: { color: '#166534' },
+  statusHighText: { color: '#92400e' },
   loadRow: {
     marginTop: Spacing.sm,
   },
@@ -458,6 +493,12 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     maxHeight: '80%',
   },
+  modalHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: '#e2e8f0',
+    alignSelf: 'center',
+    marginBottom: Spacing.md,
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -484,11 +525,9 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   modalCloseBtn: {
-    padding: Spacing.xs,
-  },
-  modalCloseText: {
-    fontSize: 18,
-    color: Colors.textMuted,
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center', justifyContent: 'center',
   },
   modalSelectTitle: {
     fontSize: Typography.xs,
@@ -501,9 +540,15 @@ const styles = StyleSheet.create({
   consultantSelectRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: Spacing.sm,
     paddingVertical: Spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: '#f8fafc',
+  },
+  consultantSelectAvatar: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center', justifyContent: 'center',
   },
   selectName: {
     fontSize: Typography.base - 1,
@@ -516,6 +561,8 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   assignChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.brand,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs,
@@ -536,6 +583,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     zIndex: 99,
+    flexDirection: 'row',
     alignItems: 'center',
     ...Shadows.md,
   },

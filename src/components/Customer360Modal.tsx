@@ -10,6 +10,7 @@ import {
   Alert,
   TextInput,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { Lead } from '../lib/types';
 import { crmApi, inventoryApi } from '../lib/api';
@@ -146,14 +147,16 @@ export default function Customer360Modal({
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Ionicons name="close" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           {/* Quick Action Buttons */}
           <View style={styles.actionRow}>
             <TouchableOpacity style={styles.actionBtn} onPress={handleCall} activeOpacity={0.8}>
-              <Text style={styles.actionIcon}>📞</Text>
+              <View style={styles.actionIconWrap}>
+                <Ionicons name="call-outline" size={20} color={Colors.textPrimary} />
+              </View>
               <Text style={styles.actionLabel}>Call</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -164,7 +167,9 @@ export default function Customer360Modal({
               }}
               activeOpacity={0.8}
             >
-              <Text style={styles.actionIcon}>💬</Text>
+              <View style={[styles.actionIconWrap, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+                <Ionicons name="chatbubble-outline" size={20} color="#fff" />
+              </View>
               <Text style={[styles.actionLabel, { color: '#fff' }]}>Message</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -175,11 +180,15 @@ export default function Customer360Modal({
               }}
               activeOpacity={0.8}
             >
-              <Text style={styles.actionIcon}>📅</Text>
+              <View style={styles.actionIconWrap}>
+                <Ionicons name="car-sport-outline" size={20} color={Colors.textPrimary} />
+              </View>
               <Text style={styles.actionLabel}>Test Drive</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtn} onPress={handleSoftHold} activeOpacity={0.8}>
-              <Text style={styles.actionIcon}>🔒</Text>
+              <View style={styles.actionIconWrap}>
+                <Ionicons name="lock-closed-outline" size={20} color={Colors.textPrimary} />
+              </View>
               <Text style={styles.actionLabel}>Soft Hold</Text>
             </TouchableOpacity>
           </View>
@@ -392,13 +401,8 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
-  closeBtn: {
-    padding: Spacing.xs,
-  },
-  closeBtnText: {
-    fontSize: 18,
-    color: Colors.textMuted,
-  },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center' },
+  closeBtnText: {},  // deprecated - using Ionicons directly
 
   actionRow: {
     flexDirection: 'row',
@@ -423,8 +427,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.brand,
     borderColor: Colors.brand,
   },
-  actionIcon: {
-    fontSize: 16,
+  actionIconWrap: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: 2,
   },
   actionLabel: {
     fontSize: 11,

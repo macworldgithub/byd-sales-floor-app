@@ -9,6 +9,7 @@ import {
   Linking,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { staffApi, StaffMember } from '../lib/api';
 
@@ -75,6 +76,8 @@ const DEFAULT_STAFF: StaffMember[] = [
   },
 ];
 
+const AVATAR_COLORS = ['#6366f1', '#10b981', '#f59e0b', '#0ea5e9', Colors.brand, '#8b5cf6'];
+
 export default function StaffScreen() {
   const [staff, setStaff] = useState<StaffMember[]>(DEFAULT_STAFF);
   const [searchQuery, setSearchQuery] = useState('');
@@ -126,19 +129,28 @@ export default function StaffScreen() {
           <Text style={styles.headerTitle}>Floor Staff</Text>
         </View>
         <View style={styles.siteBadge}>
+          <Ionicons name="location-outline" size={11} color={Colors.textSecondary} style={{ marginRight: 3 }} />
           <Text style={styles.siteBadgeText}>360 Elizabeth St</Text>
         </View>
       </View>
 
       {/* Search Bar */}
       <View style={styles.searchBarWrap}>
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Search staff by name, role, phone..."
-          placeholderTextColor={Colors.textMuted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-        />
+        <View style={styles.searchInner}>
+          <Ionicons name="search-outline" size={16} color={Colors.textMuted} style={{ marginRight: 8 }} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search staff by name, role, phone..."
+            placeholderTextColor={Colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} style={{ padding: 2 }}>
+              <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       {/* Role Filters */}
@@ -155,48 +167,64 @@ export default function StaffScreen() {
             </Text>
           </TouchableOpacity>
         ))}
+        <View style={{ flex: 1 }} />
+        <Text style={styles.countLabel}>{filteredStaff.length} staff</Text>
       </View>
 
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
-        {filteredStaff.map((member) => (
-          <View key={member._id} style={styles.card}>
-            <View style={styles.cardTop}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {member.name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase()}
-                </Text>
-              </View>
+        {filteredStaff.map((member, idx) => {
+          const avatarColor = AVATAR_COLORS[idx % AVATAR_COLORS.length];
+          const initials = member.name.split(' ').map((n) => n[0]).join('').substring(0, 2).toUpperCase();
+          const isManager = member.role.toLowerCase().includes('manager');
 
-              <View style={{ flex: 1 }}>
-                <View style={styles.nameRow}>
-                  <Text style={styles.name}>{member.name}</Text>
-                  <View style={styles.activeDot} />
+          return (
+            <View key={member._id} style={styles.card}>
+              <View style={styles.cardTop}>
+                <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
+                  <Text style={styles.avatarText}>{initials}</Text>
                 </View>
-                <Text style={styles.role}>{member.role}</Text>
-                <Text style={styles.site}>{member.site || 'Melbourne CBD'}</Text>
+
+                <View style={{ flex: 1 }}>
+                  <View style={styles.nameRow}>
+                    <Text style={styles.name}>{member.name}</Text>
+                    <View style={styles.activeDot} />
+                    {isManager && (
+                      <View style={styles.managerBadge}>
+                        <Text style={styles.managerBadgeText}>MGR</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.role}>{member.role}</Text>
+                  <View style={styles.siteRow}>
+                    <Ionicons name="business-outline" size={11} color={Colors.textMuted} />
+                    <Text style={styles.site}>{member.site || 'Melbourne CBD'}</Text>
+                  </View>
+                </View>
+              </View>
+
+              {/* Quick Contact Actions */}
+              <View style={styles.actionsRow}>
+                <TouchableOpacity
+                  style={styles.actionBtn}
+                  onPress={() => handleCall(member.phone)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="call-outline" size={14} color={Colors.brand} style={{ marginRight: 6 }} />
+                  <Text style={styles.actionBtnText}>{member.phone || 'Call'}</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.actionBtn, styles.emailBtn]}
+                  onPress={() => handleEmail(member.email)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="mail-outline" size={14} color={Colors.textSecondary} style={{ marginRight: 6 }} />
+                  <Text style={[styles.actionBtnText, { color: Colors.textSecondary }]}>Email</Text>
+                </TouchableOpacity>
               </View>
             </View>
-
-            {/* Quick Contact Actions */}
-            <View style={styles.actionsRow}>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => handleCall(member.phone)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.actionBtnText}>📞 {member.phone || 'Call'}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionBtn, styles.emailBtn]}
-                onPress={() => handleEmail(member.email)}
-                activeOpacity={0.8}
-              >
-                <Text style={[styles.actionBtnText, { color: Colors.textSecondary }]}>✉️ Email</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
+          );
+        })}
       </ScrollView>
     </View>
   );
@@ -228,6 +256,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   siteBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f1f5f9',
     paddingHorizontal: Spacing.sm,
     paddingVertical: 3,
@@ -241,20 +271,29 @@ const styles = StyleSheet.create({
 
   searchBarWrap: {
     paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.sm,
+    paddingVertical: Spacing.sm,
     backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  searchInput: {
-    height: 40,
+  searchInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f1f5f9',
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
-    fontSize: Typography.xs + 1,
+    height: 40,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: Typography.sm,
     color: Colors.textPrimary,
+    padding: 0,
   },
 
   filterRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#fff',
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
@@ -268,16 +307,17 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.full,
     backgroundColor: '#f1f5f9',
   },
-  filterChipActive: {
-    backgroundColor: Colors.brand,
-  },
+  filterChipActive: { backgroundColor: Colors.brand },
   filterChipText: {
     fontSize: Typography.xs,
     fontWeight: Typography.semibold,
     color: Colors.textSecondary,
   },
-  filterChipTextActive: {
-    color: '#fff',
+  filterChipTextActive: { color: '#fff' },
+  countLabel: {
+    fontSize: Typography.xs,
+    color: Colors.textMuted,
+    fontWeight: Typography.medium,
   },
 
   content: { flex: 1 },
@@ -297,12 +337,9 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.dark,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 46, height: 46, borderRadius: 23,
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
   },
   avatarText: {
     color: '#fff',
@@ -313,6 +350,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexWrap: 'wrap',
   },
   name: {
     fontSize: Typography.base,
@@ -320,20 +358,35 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   activeDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 7, height: 7, borderRadius: 3.5,
     backgroundColor: '#10b981',
+  },
+  managerBadge: {
+    backgroundColor: 'rgba(230,0,18,0.1)',
+    paddingHorizontal: 5,
+    paddingVertical: 1,
+    borderRadius: 3,
+  },
+  managerBadgeText: {
+    color: Colors.brand,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
   },
   role: {
     fontSize: Typography.xs,
     color: Colors.textSecondary,
     marginTop: 1,
   },
+  siteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 2,
+  },
   site: {
     fontSize: Typography.xs - 1,
     color: Colors.textMuted,
-    marginTop: 2,
   },
 
   actionsRow: {
@@ -346,14 +399,14 @@ const styles = StyleSheet.create({
   },
   actionBtn: {
     flex: 1,
-    paddingVertical: Spacing.xs + 2,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.xs + 2,
     backgroundColor: 'rgba(230,0,18,0.06)',
     borderRadius: BorderRadius.md,
   },
-  emailBtn: {
-    backgroundColor: '#f1f5f9',
-  },
+  emailBtn: { backgroundColor: '#f1f5f9' },
   actionBtnText: {
     fontSize: Typography.xs,
     fontWeight: Typography.bold,

@@ -9,6 +9,7 @@ import {
   Linking,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { Lead } from '../lib/types';
 
@@ -71,7 +72,7 @@ export default function LeadDetailModal({
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Ionicons name="close" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -82,7 +83,7 @@ export default function LeadDetailModal({
               <Text style={styles.vehicleTitle}>{lead.model}</Text>
               {lead.priority && (
                 <View style={styles.priorityBadge}>
-                  <Text style={styles.priorityText}>🔥 High Priority Buyer</Text>
+                  <Ionicons name="flame" size={14} color="#ef4444" style={{ marginRight: 4 }} /><Text style={styles.priorityText}>High Priority Buyer</Text>
                 </View>
               )}
             </View>
@@ -90,7 +91,7 @@ export default function LeadDetailModal({
             {/* Quick Actions */}
             <View style={styles.actionRow}>
               <TouchableOpacity style={styles.actionBtn} onPress={handleCall}>
-                <Text style={styles.actionIcon}>📞</Text>
+                <Ionicons name="call-outline" size={20} color={Colors.textPrimary} />
                 <Text style={styles.actionBtnLabel}>Call</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -100,7 +101,7 @@ export default function LeadDetailModal({
                   onOpenMessage(lead);
                 }}
               >
-                <Text style={styles.actionIcon}>💬</Text>
+                <Ionicons name="chatbubble-outline" size={20} color="#fff" />
                 <Text style={[styles.actionBtnLabel, styles.actionBtnLabelHighlight]}>
                   Message
                 </Text>
@@ -112,7 +113,7 @@ export default function LeadDetailModal({
                   onOpenBookDrive(lead);
                 }}
               >
-                <Text style={styles.actionIcon}>🚗</Text>
+                <Ionicons name="car-sport-outline" size={20} color={Colors.textPrimary} />
                 <Text style={styles.actionBtnLabel}>Test Drive</Text>
               </TouchableOpacity>
             </View>
@@ -249,14 +250,8 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
-  closeBtn: {
-    padding: Spacing.xs,
-  },
-  closeBtnText: {
-    fontSize: 20,
-    color: Colors.textSecondary,
-    fontWeight: '600',
-  },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center' },
+  closeBtnText: {},  // deprecated - using Ionicons directly
   body: {
     padding: Spacing.lg,
   },

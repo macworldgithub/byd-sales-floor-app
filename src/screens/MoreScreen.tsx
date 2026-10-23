@@ -7,9 +7,11 @@ import {
   TouchableOpacity,
   Switch,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { UserRole } from '../lib/types';
 import { useAuth } from '../lib/auth';
+import EditProfileModal from '../components/EditProfileModal';
 
 interface MoreScreenProps {
   role: UserRole;
@@ -27,6 +29,13 @@ const ROLE_OPTIONS: { value: UserRole; label: string; desc: string }[] = [
   { value: 'super_admin', label: 'Super Admin', desc: 'All access + config' },
 ];
 
+interface QuickAction {
+  label: string;
+  icon: string;
+  color: string;
+  action: () => void;
+}
+
 export default function MoreScreen({
   role,
   onSetRole,
@@ -35,39 +44,49 @@ export default function MoreScreen({
   onOpenAddProspect,
   isOnline,
 }: MoreScreenProps) {
-  const { user, logout } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
-  const quickActions = [
-    { label: 'Floor Calendar', icon: '🗓️', action: () => onNavigateTab('calendar') },
-    { label: 'Book Test Drive', icon: '📅', action: onOpenBookDrive },
-    { label: 'Add Prospect', icon: '➕', action: onOpenAddProspect },
-    { label: 'Allocation Board', icon: '🗂', action: () => onNavigateTab('allocation') },
-    { label: 'Performance Reports', icon: '📊', action: () => onNavigateTab('reports') },
-    { label: 'Template Studio', icon: '✍️', action: () => onNavigateTab('templates') },
-    { label: 'Staff Board', icon: '👥', action: () => onNavigateTab('staff') },
-    { label: 'Sequences', icon: '⚡', action: () => onNavigateTab('sequences') },
+  const quickActions: QuickAction[] = [
+    { label: 'Calendar', icon: 'calendar-outline', color: '#6366f1', action: () => onNavigateTab('calendar') },
+    { label: 'Book Drive', icon: 'car-sport-outline', color: Colors.brand, action: onOpenBookDrive },
+    { label: 'Add Prospect', icon: 'person-add-outline', color: '#10b981', action: onOpenAddProspect },
+    { label: 'Allocation', icon: 'git-branch-outline', color: '#f59e0b', action: () => onNavigateTab('allocation') },
+    { label: 'Performance', icon: 'bar-chart-outline', color: '#8b5cf6', action: () => onNavigateTab('reports') },
+    { label: 'Templates', icon: 'document-text-outline', color: '#0ea5e9', action: () => onNavigateTab('templates') },
+    { label: 'Staff', icon: 'people-outline', color: '#14b8a6', action: () => onNavigateTab('staff') },
+    { label: 'Sequences', icon: 'flash-outline', color: '#f97316', action: () => onNavigateTab('sequences') },
   ];
 
   return (
+    <>
     <ScrollView style={styles.root} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
       {/* User Profile Card */}
       <View style={styles.profileCard}>
         <View style={styles.profileAvatar}>
           <Text style={styles.profileAvatarText}>
-            {(user?.name || 'AR').split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+            {(user?.name || 'AR').split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase()}
           </Text>
         </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.profileName}>{user?.name || 'Alex Rivers'}</Text>
-          <Text style={styles.profileEmail}>{user?.email || 'alex.rivers@byd.com'}</Text>
+          <Text style={styles.profileEmail}>{user?.email || 'admin@byd.com'}</Text>
           <View style={styles.profileMeta}>
             <View style={[styles.onlineDot, { backgroundColor: isOnline ? '#10b981' : '#f59e0b' }]} />
             <Text style={styles.profileMetaText}>{isOnline ? 'Online' : 'Offline Mode'}</Text>
             <Text style={styles.profileMetaSep}>·</Text>
-            <Text style={styles.profileMetaText}>Melbourne CBD</Text>
+            <Text style={styles.profileMetaText}>{user?.location || 'Melbourne CBD'}</Text>
           </View>
         </View>
+        <TouchableOpacity
+          style={styles.editProfileBtn}
+          activeOpacity={0.7}
+          onPress={() => setIsEditProfileOpen(true)}
+          accessibilityLabel="Edit Profile"
+        >
+          <Ionicons name="pencil-outline" size={16} color="rgba(255,255,255,0.7)" />
+        </TouchableOpacity>
       </View>
 
       {/* Quick Actions */}
@@ -79,9 +98,11 @@ export default function MoreScreen({
               key={action.label}
               style={styles.actionGridItem}
               onPress={action.action}
-              activeOpacity={0.8}
+              activeOpacity={0.75}
             >
-              <Text style={styles.actionGridIcon}>{action.icon}</Text>
+              <View style={[styles.actionIconWrap, { backgroundColor: action.color + '18' }]}>
+                <Ionicons name={action.icon as any} size={22} color={action.color} />
+              </View>
               <Text style={styles.actionGridLabel}>{action.label}</Text>
             </TouchableOpacity>
           ))}
@@ -105,7 +126,7 @@ export default function MoreScreen({
               <View style={styles.roleRadio}>
                 {role === option.value && <View style={styles.roleRadioInner} />}
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={[styles.roleOptionLabel, role === option.value && { color: Colors.brand }]}>
                   {option.label}
                 </Text>
@@ -113,6 +134,7 @@ export default function MoreScreen({
               </View>
               {role === option.value && (
                 <View style={styles.roleActiveBadge}>
+                  <Ionicons name="checkmark-circle" size={14} color={Colors.brand} style={{ marginRight: 3 }} />
                   <Text style={styles.roleActiveBadgeText}>Active</Text>
                 </View>
               )}
@@ -126,7 +148,10 @@ export default function MoreScreen({
         <Text style={styles.sectionTitle}>SETTINGS</Text>
         <View style={styles.card}>
           <View style={styles.settingRow}>
-            <View>
+            <View style={styles.settingIconWrap}>
+              <Ionicons name="notifications-outline" size={18} color="#6366f1" />
+            </View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.settingLabel}>Push Notifications</Text>
               <Text style={styles.settingDesc}>Lead alerts & SLA reminders</Text>
             </View>
@@ -139,9 +164,18 @@ export default function MoreScreen({
           </View>
           <View style={styles.settingDivider} />
           <View style={styles.settingRow}>
-            <View>
+            <View style={[styles.settingIconWrap, { backgroundColor: isOnline ? '#f0fdf4' : '#fffbeb' }]}>
+              <Ionicons
+                name={isOnline ? 'wifi-outline' : 'cloud-offline-outline'}
+                size={18}
+                color={isOnline ? '#10b981' : '#f59e0b'}
+              />
+            </View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.settingLabel}>Network Status</Text>
-              <Text style={styles.settingDesc}>{isOnline ? 'Connected – real-time sync active' : 'Offline – actions queued locally'}</Text>
+              <Text style={styles.settingDesc}>
+                {isOnline ? 'Connected – real-time sync active' : 'Offline – actions queued locally'}
+              </Text>
             </View>
             <View style={[styles.networkBadge, { backgroundColor: isOnline ? '#f0fdf4' : '#fffbeb' }]}>
               <View style={[styles.networkDot, { backgroundColor: isOnline ? '#10b981' : '#f59e0b' }]} />
@@ -157,22 +191,20 @@ export default function MoreScreen({
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>ABOUT</Text>
         <View style={styles.card}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Version</Text>
-            <Text style={styles.infoValue}>2.0.0</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Dealership</Text>
-            <Text style={styles.infoValue}>BYD Melbourne CBD</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Organisation</Text>
-            <Text style={styles.infoValue}>Harmony Auto Group</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Address</Text>
-            <Text style={styles.infoValue}>360 Elizabeth St, Melbourne</Text>
-          </View>
+          {[
+            { label: 'Version', value: '2.0.0', icon: 'information-circle-outline' },
+            { label: 'Dealership', value: 'BYD Melbourne CBD', icon: 'business-outline' },
+            { label: 'Organisation', value: 'Harmony Auto Group', icon: 'briefcase-outline' },
+            { label: 'Address', value: '360 Elizabeth St, Melbourne', icon: 'location-outline' },
+          ].map((row, idx, arr) => (
+            <View key={row.label} style={[styles.infoRow, idx === arr.length - 1 && { borderBottomWidth: 0 }]}>
+              <View style={styles.infoIconWrap}>
+                <Ionicons name={row.icon as any} size={15} color={Colors.textMuted} />
+              </View>
+              <Text style={styles.infoLabel}>{row.label}</Text>
+              <Text style={styles.infoValue}>{row.value}</Text>
+            </View>
+          ))}
         </View>
       </View>
 
@@ -182,11 +214,22 @@ export default function MoreScreen({
         onPress={logout}
         activeOpacity={0.85}
       >
+        <Ionicons name="log-out-outline" size={18} color="#ef4444" style={{ marginRight: 8 }} />
         <Text style={styles.signOutText}>Sign Out</Text>
       </TouchableOpacity>
 
       <Text style={styles.footerText}>Sales Floor OS · BYD Harmony Auto Group · Secure Session</Text>
     </ScrollView>
+
+    <EditProfileModal
+      visible={isEditProfileOpen}
+      onClose={() => setIsEditProfileOpen(false)}
+      user={user}
+      onSave={(updated) => {
+        updateUser(updated);
+      }}
+    />
+    </>
   );
 }
 
@@ -203,7 +246,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.lg,
   },
   profileAvatar: {
-    width: 52, height: 52, borderRadius: 26,
+    width: 54, height: 54, borderRadius: 27,
     backgroundColor: Colors.brand,
     alignItems: 'center', justifyContent: 'center',
     ...Shadows.brand,
@@ -215,6 +258,11 @@ const styles = StyleSheet.create({
   onlineDot: { width: 6, height: 6, borderRadius: 3 },
   profileMetaText: { color: Colors.textDarkMuted, fontSize: Typography.xs },
   profileMetaSep: { color: Colors.textDarkMuted, fontSize: Typography.xs },
+  editProfileBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center', justifyContent: 'center',
+  },
 
   section: { marginTop: Spacing.lg, paddingHorizontal: Spacing.base },
   sectionTitle: {
@@ -244,8 +292,11 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   actionGridItem: {
-    width: '30%',
-    aspectRatio: 1.1,
+    width: '22%',
+    flex: 1,
+    minWidth: 72,
+    maxWidth: '25%',
+    aspectRatio: 0.9,
     backgroundColor: '#fff',
     borderRadius: BorderRadius.lg,
     alignItems: 'center',
@@ -254,9 +305,19 @@ const styles = StyleSheet.create({
     ...Shadows.sm,
     borderWidth: 1,
     borderColor: '#f1f5f9',
+    paddingVertical: Spacing.sm,
   },
-  actionGridIcon: { fontSize: 24 },
-  actionGridLabel: { color: Colors.textSecondary, fontSize: Typography.xs - 1, fontWeight: Typography.semibold, textAlign: 'center' },
+  actionIconWrap: {
+    width: 42, height: 42, borderRadius: 12,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  actionGridLabel: {
+    color: Colors.textSecondary,
+    fontSize: Typography.xs - 1,
+    fontWeight: Typography.semibold,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
 
   // Role switcher
   roleOption: {
@@ -267,7 +328,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f1f5f9',
   },
-  roleOptionActive: { backgroundColor: 'rgba(230,0,18,0.03)', marginHorizontal: -Spacing.md, paddingHorizontal: Spacing.md, borderRadius: BorderRadius.md },
+  roleOptionActive: {
+    backgroundColor: 'rgba(230,0,18,0.03)',
+    marginHorizontal: -Spacing.md,
+    paddingHorizontal: Spacing.md,
+    borderRadius: BorderRadius.md,
+  },
   roleRadio: {
     width: 18, height: 18, borderRadius: 9,
     borderWidth: 2,
@@ -279,10 +345,16 @@ const styles = StyleSheet.create({
     width: 8, height: 8, borderRadius: 4,
     backgroundColor: Colors.brand,
   },
-  roleOptionLabel: { color: Colors.textPrimary, fontSize: Typography.base, fontWeight: Typography.semibold },
+  roleOptionLabel: {
+    color: Colors.textPrimary,
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
+  },
   roleOptionDesc: { color: Colors.textMuted, fontSize: Typography.xs, marginTop: 1 },
   roleActiveBadge: {
     marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(230,0,18,0.1)',
     borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.sm,
@@ -294,12 +366,18 @@ const styles = StyleSheet.create({
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: Spacing.sm,
     paddingVertical: Spacing.sm,
+  },
+  settingIconWrap: {
+    width: 32, height: 32, borderRadius: 8,
+    backgroundColor: '#f1f5f9',
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
   },
   settingLabel: { color: Colors.textPrimary, fontSize: Typography.base, fontWeight: Typography.semibold },
   settingDesc: { color: Colors.textMuted, fontSize: Typography.xs, marginTop: 1 },
-  settingDivider: { height: 1, backgroundColor: '#f1f5f9', marginVertical: 4 },
+  settingDivider: { height: 1, backgroundColor: '#f1f5f9', marginVertical: 2 },
   networkBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -315,16 +393,22 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    gap: Spacing.sm,
     paddingVertical: Spacing.xs + 2,
     borderBottomWidth: 1,
     borderBottomColor: '#f8fafc',
   },
-  infoLabel: { color: Colors.textMuted, fontSize: Typography.sm },
+  infoIconWrap: {
+    width: 22, alignItems: 'center',
+  },
+  infoLabel: { color: Colors.textMuted, fontSize: Typography.sm, flex: 1 },
   infoValue: { color: Colors.textPrimary, fontSize: Typography.sm, fontWeight: Typography.medium },
 
   // Sign out
   signOutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginHorizontal: Spacing.base,
     marginTop: Spacing.lg,
     backgroundColor: '#fff',
@@ -332,7 +416,6 @@ const styles = StyleSheet.create({
     borderColor: '#fca5a5',
     borderRadius: BorderRadius.lg,
     paddingVertical: Spacing.md,
-    alignItems: 'center',
   },
   signOutText: { color: '#ef4444', fontSize: Typography.base, fontWeight: Typography.semibold },
 

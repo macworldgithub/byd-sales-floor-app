@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,8 +8,10 @@ import {
   Platform,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
+import * as Font from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider, useAuth } from './src/lib/auth';
-import { Colors, Typography, Spacing, BorderRadius } from './src/lib/theme';
+import { Colors, Typography, Spacing, BorderRadius, Shadows } from './src/lib/theme';
 import {
   INITIAL_LEADS,
   INITIAL_DELIVERIES,
@@ -55,12 +57,19 @@ type ActiveView =
   | 'staff'
   | 'sequences';
 
-const TABS: { id: MainTabId; label: string; icon: string; activeIcon: string }[] = [
-  { id: 'today', label: 'Today', icon: '⚡', activeIcon: '⚡' },
-  { id: 'leads', label: 'Leads', icon: '👥', activeIcon: '👥' },
-  { id: 'conversations', label: 'Inbox', icon: '💬', activeIcon: '💬' },
-  { id: 'deliveries', label: 'Deliveries', icon: '🚗', activeIcon: '🚗' },
-  { id: 'more', label: 'More', icon: '⋯', activeIcon: '⋯' },
+interface TabItemDef {
+  id: MainTabId;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  activeIcon: keyof typeof Ionicons.glyphMap;
+}
+
+const TABS: TabItemDef[] = [
+  { id: 'today', label: 'Today', icon: 'flash-outline', activeIcon: 'flash' },
+  { id: 'leads', label: 'Leads', icon: 'people-outline', activeIcon: 'people' },
+  { id: 'conversations', label: 'Inbox', icon: 'chatbubbles-outline', activeIcon: 'chatbubbles' },
+  { id: 'deliveries', label: 'Deliveries', icon: 'car-sport-outline', activeIcon: 'car-sport' },
+  { id: 'more', label: 'More', icon: 'grid-outline', activeIcon: 'grid' },
 ];
 
 function TabBar({
@@ -95,10 +104,13 @@ function TabBar({
             onPress={() => onPress(tab.id)}
             activeOpacity={0.75}
           >
+            {isActive && <View style={styles.tabActiveIndicator} />}
             <View style={styles.tabIconWrap}>
-              <Text style={[styles.tabIcon, isActive && styles.tabIconActive]}>
-                {isActive ? tab.activeIcon : tab.icon}
-              </Text>
+              <Ionicons
+                name={isActive ? tab.activeIcon : tab.icon}
+                size={21}
+                color={isActive ? Colors.brand : '#64748b'}
+              />
               {showBadge && (
                 <View style={styles.badge}>
                   <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
@@ -106,7 +118,6 @@ function TabBar({
               )}
             </View>
             <Text style={[styles.tabLabel, isActive && styles.tabLabelActive]}>{tab.label}</Text>
-            {isActive && <View style={styles.tabActiveLine} />}
           </TouchableOpacity>
         );
       })}
@@ -117,9 +128,19 @@ function TabBar({
 function AppShell() {
   const { user, isAuthenticated, isLoading } = useAuth();
 
+  const [fontsLoaded, setFontsLoaded] = useState(false);
   const [activeView, setActiveView] = useState<ActiveView>('today');
   const [role, setRole] = useState<UserRole>('consultant');
   const [isOnline] = useState(true);
+
+  // Preload Icon Fonts
+  useEffect(() => {
+    Font.loadAsync({
+      ...Ionicons.font,
+    })
+      .then(() => setFontsLoaded(true))
+      .catch(() => setFontsLoaded(true));
+  }, []);
 
   // Data state
   const [leads, setLeads] = useState<Lead[]>(INITIAL_LEADS);
@@ -260,11 +281,12 @@ function AppShell() {
     setActiveView(tab as ActiveView);
   }, []);
 
-  if (isLoading) {
+  if (isLoading || !fontsLoaded) {
     return (
       <View style={styles.loadingScreen}>
-        <Text style={styles.loadingText}>🚗</Text>
-        <Text style={styles.loadingLabel}>Sales Floor</Text>
+        <Ionicons name="car-sport" size={54} color={Colors.brand} />
+        <Text style={styles.loadingLabel}>BYD SALES FLOOR</Text>
+        <Text style={styles.loadingSub}>Melbourne CBD</Text>
       </View>
     );
   }
@@ -378,18 +400,20 @@ function AppShell() {
     <SafeAreaView style={styles.root}>
       <ExpoStatusBar style="dark" />
 
-      {/* Global App Header */}
-      <AppHeader
-        userName={user?.name || 'Alex Rivers'}
-        role={role}
-        isOnline={isOnline}
-        unreadNotificationsCount={3}
-        onOpenNotifications={() => setNotificationCenterVisible(true)}
-        onSelectLead={handleSelectLead}
-        leads={leads}
-      />
+      {/* App Header — Today screen only */}
+      {activeView === 'today' && (
+        <AppHeader
+          userName={user?.name || 'Alex Rivers'}
+          role={role}
+          isOnline={isOnline}
+          unreadNotificationsCount={3}
+          onOpenNotifications={() => setNotificationCenterVisible(true)}
+          onSelectLead={handleSelectLead}
+          leads={leads}
+        />
+      )}
 
-      {/* Sub-view Back Bar if navigated to a sub-screen */}
+      {/* Sub-view Navigation Header */}
       {isSecondaryView && (
         <View style={styles.subViewHeader}>
           <TouchableOpacity
@@ -397,23 +421,25 @@ function AppShell() {
             onPress={() => setActiveView('more')}
             activeOpacity={0.8}
           >
-            <Text style={styles.backBtnText}>← Back to Menu</Text>
+            <Ionicons name="chevron-back" size={16} color={Colors.brand} />
+            <Text style={styles.backBtnText}>Menu</Text>
           </TouchableOpacity>
           <Text style={styles.subViewTitle}>{activeView.toUpperCase()}</Text>
+          <View style={{ width: 40 }} />
         </View>
       )}
 
-      {/* Main Content */}
+      {/* Main Content View */}
       <View style={styles.content}>{renderScreen()}</View>
 
-      {/* Tab Bar */}
+      {/* Polish Tab Bar */}
       <TabBar
         activeView={activeView}
         onPress={(tabId) => setActiveView(tabId)}
         unreadCount={unreadCount}
       />
 
-      {/* ── Modals ── */}
+      {/* ── All Modals ── */}
       <MessageModal
         visible={messageModalVisible}
         onClose={() => setMessageModalVisible(false)}
@@ -488,58 +514,68 @@ export default function App() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#f4f5f7',
+    backgroundColor: '#ffffff',
   },
   content: {
     flex: 1,
+    backgroundColor: Colors.light,
   },
   loadingScreen: {
     flex: 1,
-    backgroundColor: '#090c12',
+    backgroundColor: '#090d16',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-  },
-  loadingText: {
-    fontSize: 48,
+    gap: 8,
   },
   loadingLabel: {
-    fontSize: Typography.xxl,
-    fontWeight: '700',
-    color: '#f1f5f9',
+    fontSize: Typography.xl,
+    fontWeight: '800',
+    color: '#ffffff',
+    letterSpacing: 2,
+    marginTop: 8,
+  },
+  loadingSub: {
+    fontSize: Typography.xs,
+    fontWeight: '600',
+    color: Colors.textMuted,
     letterSpacing: 1,
   },
   subViewHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#ffffff',
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.xs + 2,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
   backBtn: {
-    paddingVertical: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
   },
   backBtnText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
+    fontSize: Typography.xs + 1,
+    fontWeight: '700',
     color: Colors.brand,
   },
   subViewTitle: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '800',
-    color: Colors.textMuted,
+    color: Colors.textPrimary,
     letterSpacing: 1,
   },
+
   // ── Tab Bar ──
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: Colors.tabBarBg,
+    backgroundColor: '#090d16',
     borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.08)',
-    paddingBottom: Platform.OS === 'ios' ? 24 : 8,
+    borderTopColor: 'rgba(255, 255, 255, 0.08)',
+    paddingBottom: Platform.OS === 'ios' ? 26 : 10,
     paddingTop: 8,
     paddingHorizontal: Spacing.xs,
   },
@@ -549,40 +585,35 @@ const styles = StyleSheet.create({
     position: 'relative',
     paddingTop: 4,
   },
+  tabActiveIndicator: {
+    position: 'absolute',
+    top: -8,
+    width: 24,
+    height: 3,
+    borderRadius: BorderRadius.full,
+    backgroundColor: Colors.brand,
+  },
   tabIconWrap: {
     position: 'relative',
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  tabIcon: {
-    fontSize: 20,
-    opacity: 0.5,
-  },
-  tabIconActive: {
-    opacity: 1,
+    width: 28,
+    height: 28,
   },
   tabLabel: {
-    fontSize: Typography.xs,
+    fontSize: 10,
     fontWeight: '500',
-    color: Colors.tabInactive,
-    marginTop: 3,
+    color: '#64748b',
+    marginTop: 2,
   },
   tabLabelActive: {
-    color: Colors.tabActive,
+    color: '#ffffff',
     fontWeight: '700',
-  },
-  tabActiveLine: {
-    position: 'absolute',
-    top: -8,
-    width: 28,
-    height: 3,
-    borderRadius: BorderRadius.full,
-    backgroundColor: Colors.tabActive,
   },
   badge: {
     position: 'absolute',
-    top: -5,
-    right: -10,
+    top: -2,
+    right: -8,
     backgroundColor: Colors.brand,
     borderRadius: BorderRadius.full,
     minWidth: 16,
@@ -590,6 +621,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#090d16',
   },
   badgeText: {
     fontSize: 9,

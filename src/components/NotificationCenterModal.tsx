@@ -8,6 +8,7 @@ import {
   Modal,
   Switch,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 
 export interface NotificationItem {
@@ -87,14 +88,14 @@ export default function NotificationCenterModal({
 
   const filtered = filter === 'unread' ? notifications.filter((n) => !n.read) : notifications;
 
-  const getIcon = (type: NotificationItem['type']) => {
+  const getIcon = (type: NotificationItem['type']): { name: string; color: string; bg: string } => {
     switch (type) {
-      case 'allocation': return '⚡';
-      case 'sms': return '💬';
-      case 'appointment': return '📅';
-      case 'delivery': return '🚗';
-      case 'sla': return '⏱';
-      default: return '🔔';
+      case 'allocation': return { name: 'person-add-outline', color: '#6366f1', bg: '#f0f0ff' };
+      case 'sms': return { name: 'chatbubble-outline', color: '#0ea5e9', bg: '#f0f9ff' };
+      case 'appointment': return { name: 'calendar-outline', color: Colors.brand, bg: 'rgba(230,0,18,0.08)' };
+      case 'delivery': return { name: 'cube-outline', color: '#10b981', bg: '#f0fdf4' };
+      case 'sla': return { name: 'timer-outline', color: '#f59e0b', bg: '#fffbeb' };
+      default: return { name: 'notifications-outline', color: Colors.textSecondary, bg: '#f8fafc' };
     }
   };
 
@@ -121,7 +122,7 @@ export default function NotificationCenterModal({
               </View>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Ionicons name="close" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -172,8 +173,8 @@ export default function NotificationCenterModal({
                   }}
                   activeOpacity={0.8}
                 >
-                  <View style={styles.itemIconWrap}>
-                    <Text style={styles.itemIcon}>{getIcon(item.type)}</Text>
+                  <View style={[styles.itemIconWrap, { backgroundColor: getIcon(item.type).bg }]}>
+                    <Ionicons name={getIcon(item.type).name as any} size={18} color={getIcon(item.type).color} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <View style={styles.itemHeader}>
@@ -266,13 +267,8 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: Colors.brand,
   },
-  closeBtn: {
-    padding: Spacing.xs,
-  },
-  closeBtnText: {
-    fontSize: 18,
-    color: Colors.textMuted,
-  },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center' },
+  closeBtnText: {},  // deprecated - using Ionicons directly
 
   toolbar: {
     flexDirection: 'row',

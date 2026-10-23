@@ -8,9 +8,9 @@ import {
   TextInput,
   ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
-import { Lead, Delivery, Appointment, UserRole } from '../lib/types';
-import { searchApi } from '../lib/api';
+import { Lead, UserRole } from '../lib/types';
 
 interface AppHeaderProps {
   userName?: string;
@@ -52,27 +52,33 @@ export default function AppHeader({
 
   const firstName = userName.split(' ')[0];
 
+  const roleLabel =
+    role === 'consultant' ? 'Specialist' : role === 'manager' ? 'Floor Manager' : 'Principal';
+
   return (
     <>
       <View style={styles.topbar}>
         {/* Left Greeting & Location */}
         <View style={styles.leftCol}>
-          <Text style={styles.kicker}>BYD MELBOURNE CBD · FLOOR OS</Text>
-          <Text style={styles.greeting}>Good morning, {firstName}</Text>
+          <View style={styles.kickerRow}>
+            <View style={[styles.onlineDot, { backgroundColor: isOnline ? '#10b981' : '#f59e0b' }]} />
+            <Text style={styles.kicker}>BYD MELBOURNE CBD · FLOOR OS</Text>
+          </View>
+          <Text style={styles.greeting} numberOfLines={1}>
+            Good morning, <Text style={styles.greetingBold}>{firstName}</Text>
+          </Text>
         </View>
 
         {/* Right Tools */}
         <View style={styles.rightTools}>
-          {/* Online Dot */}
-          <View style={[styles.onlineDot, { backgroundColor: isOnline ? '#10b981' : '#f59e0b' }]} />
-
           {/* Search Trigger */}
           <TouchableOpacity
             style={styles.iconBtn}
             onPress={() => setIsSearchOpen(true)}
             activeOpacity={0.75}
+            accessibilityLabel="Search floor"
           >
-            <Text style={styles.toolIcon}>🔍</Text>
+            <Ionicons name="search" size={17} color={Colors.textSecondary} />
           </TouchableOpacity>
 
           {/* Notification Bell */}
@@ -80,8 +86,9 @@ export default function AppHeader({
             style={styles.iconBtn}
             onPress={onOpenNotifications}
             activeOpacity={0.75}
+            accessibilityLabel="Notifications"
           >
-            <Text style={styles.toolIcon}>🔔</Text>
+            <Ionicons name="notifications-outline" size={18} color={Colors.textSecondary} />
             {unreadNotificationsCount > 0 && (
               <View style={styles.notifBadge}>
                 <Text style={styles.notifBadgeText}>
@@ -93,9 +100,7 @@ export default function AppHeader({
 
           {/* Role Pill */}
           <View style={styles.rolePill}>
-            <Text style={styles.rolePillText}>
-              {role === 'consultant' ? 'Specialist' : role === 'manager' ? 'Manager' : 'Principal'}
-            </Text>
+            <Text style={styles.rolePillText}>{roleLabel}</Text>
           </View>
         </View>
       </View>
@@ -110,15 +115,25 @@ export default function AppHeader({
         <View style={styles.searchOverlay}>
           <View style={styles.searchContainer}>
             <View style={styles.searchHeader}>
-              <Text style={styles.searchIcon}>🔍</Text>
+              <Ionicons name="search" size={18} color={Colors.textMuted} style={styles.searchHeaderIcon} />
               <TextInput
                 style={styles.searchInput}
-                placeholder="Search name, phone, model..."
+                placeholder="Search name, mobile, model, VIN…"
                 placeholderTextColor={Colors.textMuted}
                 autoFocus={true}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
+                returnKeyType="search"
               />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity
+                  onPress={() => setSearchQuery('')}
+                  style={styles.clearBtn}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                >
+                  <Ionicons name="close-circle" size={17} color={Colors.textMuted} />
+                </TouchableOpacity>
+              )}
               <TouchableOpacity
                 onPress={() => {
                   setSearchQuery('');
@@ -133,7 +148,9 @@ export default function AppHeader({
             <ScrollView style={styles.resultsList} showsVerticalScrollIndicator={false}>
               {searchQuery.trim().length > 0 && searchResults.length === 0 ? (
                 <View style={styles.noResults}>
+                  <Ionicons name="search-outline" size={32} color={Colors.textMuted} style={{ marginBottom: Spacing.sm }} />
                   <Text style={styles.noResultsText}>No matching showroom prospects found.</Text>
+                  <Text style={styles.noResultsSub}>Try searching for Sarah, SEAL, or mobile digits</Text>
                 </View>
               ) : (
                 searchResults.map((lead) => (
@@ -144,14 +161,14 @@ export default function AppHeader({
                       setIsSearchOpen(false);
                       onSelectLead(lead);
                     }}
-                    activeOpacity={0.8}
+                    activeOpacity={0.75}
                   >
                     <View style={styles.resultAvatar}>
                       <Text style={styles.resultAvatarText}>{lead.initials || 'BY'}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.resultName}>{lead.name}</Text>
-                      <Text style={styles.resultDetail}>
+                      <Text style={styles.resultDetail} numberOfLines={1}>
                         {lead.model || 'BYD Range'} · {lead.stage || 'Imported'} · {lead.phone}
                       </Text>
                     </View>
@@ -173,8 +190,8 @@ const styles = StyleSheet.create({
   topbar: {
     backgroundColor: '#ffffff',
     paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.sm,
+    paddingTop: Spacing.sm + 2,
+    paddingBottom: Spacing.sm + 2,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
     flexDirection: 'row',
@@ -183,163 +200,187 @@ const styles = StyleSheet.create({
   },
   leftCol: {
     flex: 1,
+    marginRight: Spacing.sm,
+  },
+  kickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 2,
+  },
+  onlineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   kicker: {
-    fontSize: 9,
-    fontWeight: '800',
+    fontSize: 10,
+    fontWeight: '700',
     color: Colors.textMuted,
     letterSpacing: 0.8,
   },
   greeting: {
-    fontSize: Typography.base,
+    fontSize: Typography.titleMedium.fontSize,
+    fontWeight: '500',
+    color: Colors.textPrimary,
+  },
+  greetingBold: {
     fontWeight: '700',
     color: Colors.textPrimary,
-    marginTop: 1,
   },
   rightTools: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-  },
-  onlineDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 3.5,
+    gap: Spacing.xs + 2,
   },
   iconBtn: {
     position: 'relative',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f1f5f9',
+    width: 36,
+    height: 36,
+    borderRadius: BorderRadius.md,
+    backgroundColor: '#f8fafc',
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  toolIcon: {
-    fontSize: 14,
   },
   notifBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
+    top: -3,
+    right: -3,
     backgroundColor: Colors.brand,
-    borderRadius: 8,
-    minWidth: 15,
-    height: 15,
+    borderRadius: BorderRadius.full,
+    minWidth: 16,
+    height: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 2,
+    paddingHorizontal: 3,
+    borderWidth: 1.5,
+    borderColor: '#ffffff',
   },
   notifBadgeText: {
-    color: '#fff',
-    fontSize: 8,
+    color: '#ffffff',
+    fontSize: 9,
     fontWeight: '800',
   },
   rolePill: {
     backgroundColor: Colors.dark,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 5,
     borderRadius: BorderRadius.full,
   },
   rolePillText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
 
   // Search Modal
   searchOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    backgroundColor: 'rgba(9, 13, 22, 0.65)',
     paddingTop: 50,
   },
   searchContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     borderTopLeftRadius: BorderRadius.xl,
     borderTopRightRadius: BorderRadius.xl,
     flex: 1,
     paddingHorizontal: Spacing.base,
-    paddingTop: Spacing.md,
+    paddingTop: Spacing.base,
   },
   searchHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
     backgroundColor: '#f1f5f9',
     borderRadius: BorderRadius.lg,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs,
+    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 2,
   },
-  searchIcon: {
-    fontSize: 16,
+  searchHeaderIcon: {
+    marginRight: Spacing.xs,
   },
   searchInput: {
     flex: 1,
-    height: 40,
-    fontSize: Typography.sm,
+    height: 42,
+    fontSize: Typography.base,
     color: Colors.textPrimary,
+    fontWeight: '500',
+  },
+  clearBtn: {
+    padding: Spacing.xs,
+    marginRight: Spacing.xs,
   },
   closeSearch: {
     paddingVertical: Spacing.xs,
     paddingHorizontal: Spacing.xs,
   },
   closeSearchText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
+    fontSize: Typography.sm,
+    fontWeight: '700',
     color: Colors.brand,
   },
   resultsList: {
     marginTop: Spacing.md,
   },
   noResults: {
-    padding: Spacing.xl,
+    paddingVertical: Spacing.xxxl,
     alignItems: 'center',
   },
   noResultsText: {
-    fontSize: Typography.xs + 1,
+    fontSize: Typography.base,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  noResultsSub: {
+    fontSize: Typography.xs,
     color: Colors.textMuted,
+    marginTop: 4,
   },
   resultItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.sm,
+    paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#f8fafc',
-    gap: Spacing.sm,
+    borderBottomColor: Colors.borderSubtle,
+    gap: Spacing.md,
   },
   resultAvatar: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: Colors.dark,
     alignItems: 'center',
     justifyContent: 'center',
   },
   resultAvatarText: {
-    color: '#fff',
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
+    color: '#ffffff',
+    fontSize: Typography.sm,
+    fontWeight: '700',
   },
   resultName: {
-    fontSize: Typography.base - 1,
-    fontWeight: Typography.bold,
+    fontSize: Typography.base,
+    fontWeight: '700',
     color: Colors.textPrimary,
   },
   resultDetail: {
     fontSize: Typography.xs,
     color: Colors.textSecondary,
-    marginTop: 1,
+    marginTop: 2,
   },
   scoreChip: {
-    backgroundColor: 'rgba(230,0,18,0.08)',
+    backgroundColor: Colors.brandSoft,
     paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: BorderRadius.xs,
+    borderWidth: 1,
+    borderColor: Colors.brandBorder,
   },
   scoreChipText: {
     fontSize: 10,
     fontWeight: '800',
     color: Colors.brand,
+    fontFamily: 'monospace',
   },
 });

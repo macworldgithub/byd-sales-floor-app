@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
-  ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
-import { ConversationThread, Lead } from '../lib/types';
+import { ConversationThread } from '../lib/types';
 import { conversationApi } from '../lib/api';
 
 interface ConversationsScreenProps {
@@ -67,14 +67,25 @@ export default function ConversationsScreen({
 
   const renderThread = ({ item: thread }: { item: ConversationThread }) => {
     const displayName = thread.prospectName || thread.name || 'Prospect';
-    const initials = thread.initials || displayName.split(' ').filter(Boolean).map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'TH';
+    const initials =
+      thread.initials ||
+      displayName
+        .split(' ')
+        .filter(Boolean)
+        .map(n => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase() ||
+      'TH';
     const timeDisplay = thread.lastMessageAt
       ? new Date(thread.lastMessageAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       : (thread.time || 'Recent');
 
+    const hasUnread = (thread.unreadCount || 0) > 0;
+
     return (
       <TouchableOpacity
-        style={styles.threadRow}
+        style={[styles.threadRow, hasUnread && styles.threadRowUnread]}
         onPress={() => onSelectThread(thread)}
         activeOpacity={0.8}
       >
@@ -82,30 +93,36 @@ export default function ConversationsScreen({
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
-          {!!thread.unreadCount && <View style={styles.unreadDot} />}
+          {hasUnread && <View style={styles.unreadDot} />}
         </View>
 
         <View style={styles.threadContent}>
           <View style={styles.threadTopRow}>
             <View style={styles.threadNameRow}>
-              <Text style={[styles.threadName, !!thread.unreadCount && styles.threadNameBold]} numberOfLines={1}>
+              <Text
+                style={[styles.threadName, hasUnread && styles.threadNameBold]}
+                numberOfLines={1}
+              >
                 {displayName}
               </Text>
               <View style={styles.modelTag}>
+                <Ionicons name="car-outline" size={10} color={Colors.textSecondary} style={{ marginRight: 2 }} />
                 <Text style={styles.modelTagText}>{thread.model || 'BYD Range'}</Text>
               </View>
             </View>
-            <Text style={styles.threadTime}>{timeDisplay}</Text>
+            <Text style={[styles.threadTime, hasUnread && styles.threadTimeBold]}>{timeDisplay}</Text>
           </View>
-          <Text style={styles.threadPreview} numberOfLines={2}>
-            {thread.lastMessage || 'Tap to view conversation'}
+          <Text style={[styles.threadPreview, hasUnread && styles.threadPreviewUnread]} numberOfLines={2}>
+            {thread.lastMessage || 'Tap to start customer conversation'}
           </Text>
         </View>
 
-        {!!thread.unreadCount && (
+        {hasUnread ? (
           <View style={styles.unreadBadge}>
             <Text style={styles.unreadBadgeText}>{thread.unreadCount}</Text>
           </View>
+        ) : (
+          <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
         )}
       </TouchableOpacity>
     );
@@ -118,56 +135,56 @@ export default function ConversationsScreen({
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerEyebrow}>Compliant Communication</Text>
-          <Text style={styles.headerTitle}>CONVERSATION HUB</Text>
+          <Text style={styles.headerEyebrow}>CUSTOMER INBOX · ACMA AUDITED</Text>
+          <Text style={styles.headerTitle}>Showroom Inbox</Text>
         </View>
         <TouchableOpacity style={styles.composeBtn} onPress={onOpenNewMessage} activeOpacity={0.85}>
-          <Text style={styles.composeBtnText}>✉ Compose</Text>
+          <Ionicons name="create-outline" size={16} color="#ffffff" />
+          <Text style={styles.composeBtnText}>New SMS</Text>
         </TouchableOpacity>
       </View>
 
-      {/* Search + ACMA badge */}
+      {/* Search Field */}
       <View style={styles.searchRow}>
         <View style={styles.searchField}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search" size={17} color={Colors.textMuted} />
           <TextInput
             style={styles.searchInput}
             value={query}
             onChangeText={setQuery}
-            placeholder="Filter by customer, mobile, or model…"
+            placeholder="Search threads by customer, mobile or text…"
             placeholderTextColor={Colors.textMuted}
             clearButtonMode="while-editing"
           />
-        </View>
-        <View style={styles.acmaBadge}>
-          <Text style={styles.acmaText}>🛡 Opt-Out Active</Text>
+          {query.length > 0 && (
+            <TouchableOpacity onPress={() => setQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
-      {/* Stats row */}
-      <View style={styles.statsRow}>
-        <Text style={styles.statsText}>{threadsList.length} conversations</Text>
-        {totalUnread > 0 && (
-          <View style={styles.unreadStat}>
-            <Text style={styles.unreadStatText}>{totalUnread} unread</Text>
-          </View>
-        )}
-        {isLoading && <ActivityIndicator size="small" color={Colors.brand} />}
+      {/* Info Pill Bar */}
+      <View style={styles.infoBar}>
+        <View style={styles.complianceRow}>
+          <Ionicons name="shield-checkmark" size={14} color="#10b981" />
+          <Text style={styles.complianceText}>Opt-out compliant (STOP auto-suppressed)</Text>
+        </View>
+        <Text style={styles.countText}>{threadsList.length} threads</Text>
       </View>
 
-      {/* Threads list */}
+      {/* Threads List */}
       <FlatList
         data={threadsList}
-        keyExtractor={(item) => String(item._id || item.id)}
+        keyExtractor={(item) => String(item._id || item.id || item.name)}
         renderItem={renderThread}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>💬</Text>
-            <Text style={styles.emptyTitle}>No conversations</Text>
-            <Text style={styles.emptySubtitle}>Start a new message to get connected.</Text>
+            <Ionicons name="chatbubbles-outline" size={44} color={Colors.textMuted} style={{ marginBottom: Spacing.sm }} />
+            <Text style={styles.emptyTitle}>No messages found</Text>
+            <Text style={styles.emptySubtitle}>All incoming customer inquiries will appear here in real-time.</Text>
           </View>
         }
       />
@@ -181,133 +198,222 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm + 2,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.lightBorder,
+    borderBottomColor: Colors.border,
   },
   headerEyebrow: {
     color: Colors.textMuted,
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
+    fontSize: 10,
+    fontWeight: '800',
     letterSpacing: 0.8,
-    textTransform: 'uppercase',
   },
   headerTitle: {
     color: Colors.textPrimary,
-    fontSize: Typography.xl,
-    fontWeight: Typography.extrabold,
-    letterSpacing: -0.5,
+    fontSize: Typography.titleLarge.fontSize,
+    fontWeight: '800',
+    marginTop: 1,
   },
   composeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: Colors.brand,
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 7,
     ...Shadows.brand,
   },
-  composeBtnText: { color: '#fff', fontSize: Typography.sm, fontWeight: Typography.bold },
+  composeBtnText: {
+    color: '#ffffff',
+    fontSize: Typography.xs,
+    fontWeight: '700',
+  },
 
   searchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.lightBorder,
+    backgroundColor: '#ffffff',
   },
   searchField: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light,
+    backgroundColor: '#f1f5f9',
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.sm,
+    height: 40,
+    gap: Spacing.xs + 2,
   },
-  searchIcon: { fontSize: Typography.base },
-  searchInput: { flex: 1, color: Colors.textPrimary, fontSize: Typography.sm, padding: 0 },
-  acmaBadge: {
-    backgroundColor: '#f0fdf4',
-    borderWidth: 1,
-    borderColor: '#bbf7d0',
-    borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: Spacing.xs + 2,
+  searchInput: {
+    flex: 1,
+    fontSize: Typography.sm,
+    color: Colors.textPrimary,
+    fontWeight: '500',
   },
-  acmaText: { color: '#166534', fontSize: Typography.xs - 1, fontWeight: Typography.semibold },
 
-  statsRow: {
+  infoBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.base,
+    paddingVertical: Spacing.xs + 2,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    backgroundColor: '#ffffff',
+  },
+  complianceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: 5,
+  },
+  complianceText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  countText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textMuted,
+  },
+
+  listContent: {
     paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.xs,
-    backgroundColor: '#f8fafc',
+    paddingTop: Spacing.sm,
+    paddingBottom: Spacing.xxxl,
+    gap: Spacing.xs + 2,
   },
-  statsText: { color: Colors.textMuted, fontSize: Typography.xs, flex: 1 },
-  unreadStat: {
-    backgroundColor: Colors.brand,
-    borderRadius: BorderRadius.full,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-  },
-  unreadStatText: { color: '#fff', fontSize: Typography.xs - 1, fontWeight: Typography.bold },
-
-  listContent: { paddingBottom: Spacing.xl, backgroundColor: '#fff' },
-  separator: { height: 1, backgroundColor: '#f1f5f9', marginLeft: 76 },
-
   threadRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
-    gap: Spacing.md,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadows.sm,
   },
-  avatarWrap: { position: 'relative' },
+  threadRowUnread: {
+    borderColor: '#fca5a5',
+    backgroundColor: '#fffdfa',
+  },
+  avatarWrap: {
+    position: 'relative',
+    marginRight: Spacing.sm + 2,
+  },
   avatar: {
-    width: 44, height: 44, borderRadius: 22,
-    backgroundColor: '#1e293b',
-    alignItems: 'center', justifyContent: 'center',
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: Colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  avatarText: { color: '#fff', fontSize: Typography.sm, fontWeight: Typography.bold },
+  avatarText: {
+    color: '#ffffff',
+    fontSize: Typography.sm,
+    fontWeight: '700',
+  },
   unreadDot: {
     position: 'absolute',
-    top: -2, right: -2,
-    width: 10, height: 10, borderRadius: 5,
+    top: 0,
+    right: 0,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: Colors.brand,
-    borderWidth: 2, borderColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#ffffff',
   },
-  threadContent: { flex: 1, minWidth: 0 },
-  threadTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: Spacing.sm },
-  threadNameRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, flex: 1, minWidth: 0 },
-  threadName: { color: Colors.textPrimary, fontSize: Typography.base, fontWeight: Typography.medium, flexShrink: 1 },
-  threadNameBold: { fontWeight: Typography.bold },
+
+  threadContent: {
+    flex: 1,
+    marginRight: Spacing.sm,
+  },
+  threadTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  threadNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flex: 1,
+    marginRight: Spacing.xs,
+  },
+  threadName: {
+    fontSize: Typography.base - 1,
+    fontWeight: '600',
+    color: Colors.textPrimary,
+  },
+  threadNameBold: {
+    fontWeight: '800',
+  },
   modelTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f1f5f9',
-    borderRadius: 4,
-    paddingHorizontal: Spacing.xs + 2,
-    paddingVertical: 1,
+    paddingHorizontal: 6,
+    paddingVertical: 1.5,
+    borderRadius: BorderRadius.xs,
   },
-  modelTagText: { color: Colors.textMuted, fontSize: Typography.xs - 1, fontWeight: Typography.semibold },
-  threadTime: { color: Colors.textMuted, fontSize: Typography.xs, fontFamily: 'monospace', flexShrink: 0 },
-  threadPreview: { color: Colors.textSecondary, fontSize: Typography.sm, marginTop: 3, lineHeight: 17 },
+  modelTagText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  threadTime: {
+    fontSize: 10,
+    color: Colors.textMuted,
+    fontFamily: 'monospace',
+  },
+  threadTimeBold: {
+    color: Colors.brand,
+    fontWeight: '700',
+  },
+  threadPreview: {
+    fontSize: Typography.xs + 1,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  threadPreviewUnread: {
+    color: Colors.textPrimary,
+    fontWeight: '600',
+  },
+
   unreadBadge: {
     backgroundColor: Colors.brand,
     borderRadius: BorderRadius.full,
-    minWidth: 20, height: 20,
-    alignItems: 'center', justifyContent: 'center',
-    paddingHorizontal: 5,
+    minWidth: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 4,
   },
-  unreadBadgeText: { color: '#fff', fontSize: Typography.xs - 1, fontWeight: Typography.bold },
+  unreadBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: '800',
+  },
 
-  emptyState: { alignItems: 'center', paddingVertical: Spacing.xxxl },
-  emptyIcon: { fontSize: 40, marginBottom: Spacing.md },
-  emptyTitle: { color: Colors.textPrimary, fontSize: Typography.lg, fontWeight: Typography.bold },
-  emptySubtitle: { color: Colors.textMuted, fontSize: Typography.sm, marginTop: Spacing.xs },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxxl,
+  },
+  emptyTitle: {
+    color: Colors.textPrimary,
+    fontSize: Typography.base,
+    fontWeight: '700',
+  },
+  emptySubtitle: {
+    color: Colors.textMuted,
+    fontSize: Typography.xs,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
 });

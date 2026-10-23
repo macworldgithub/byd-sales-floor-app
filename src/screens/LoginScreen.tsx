@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { useAuth } from '../lib/auth';
+import { Ionicons } from '@expo/vector-icons';
 
 interface LoginScreenProps {
   onLoginSuccess: () => void;
@@ -82,7 +83,8 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
 
             {error ? (
               <View style={styles.errorBanner}>
-                <Text style={styles.errorText}>⚠ {error}</Text>
+                <Ionicons name="warning-outline" size={14} color="#b91c1c" style={{ marginRight: 6 }} />
+                <Text style={styles.errorText}>{error}</Text>
               </View>
             ) : null}
 
@@ -90,7 +92,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>EMAIL ADDRESS</Text>
               <View style={styles.fieldWrap}>
-                <Text style={styles.fieldIcon}>✉</Text>
+                <Ionicons name="mail-outline" size={16} color={Colors.textDarkMuted} style={styles.fieldIcon} />
                 <TextInput
                   style={styles.fieldInput}
                   value={email}
@@ -109,7 +111,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
             <View style={styles.fieldGroup}>
               <Text style={styles.fieldLabel}>PASSWORD</Text>
               <View style={styles.fieldWrap}>
-                <Text style={styles.fieldIcon}>🔒</Text>
+                <Ionicons name="lock-closed-outline" size={16} color={Colors.textDarkMuted} style={styles.fieldIcon} />
                 <TextInput
                   style={[styles.fieldInput, { flex: 1 }]}
                   value={password}
@@ -125,7 +127,11 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                   style={styles.toggleBtn}
                   hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 >
-                  <Text style={styles.toggleText}>{showPw ? '🙈' : '👁'}</Text>
+                  <Ionicons
+                    name={showPw ? 'eye-off-outline' : 'eye-outline'}
+                    size={18}
+                    color={Colors.textDarkMuted}
+                  />
                 </TouchableOpacity>
               </View>
             </View>
@@ -141,7 +147,7 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
                 <>
-                  <Text style={styles.submitIcon}>🛡</Text>
+                  <Ionicons name="shield-checkmark-outline" size={16} color="#fff" style={{ marginRight: 6 }} />
                   <Text style={styles.submitText}>Sign In</Text>
                 </>
               )}
@@ -154,7 +160,8 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
               disabled={isLoading}
               activeOpacity={0.85}
             >
-              <Text style={styles.demoBtnText}>⚡ Quick Demo Login</Text>
+              <Ionicons name="flash-outline" size={14} color={Colors.textDarkSecondary} style={{ marginRight: 5 }} />
+              <Text style={styles.demoBtnText}>Quick Demo Login</Text>
             </TouchableOpacity>
 
             {/* Footer */}
@@ -273,6 +280,8 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: 'rgba(239, 68, 68, 0.12)',
     borderWidth: 1,
     borderColor: 'rgba(239, 68, 68, 0.3)',
@@ -284,6 +293,7 @@ const styles = StyleSheet.create({
     color: '#fca5a5',
     fontSize: Typography.sm,
     fontWeight: Typography.medium,
+    flex: 1,
   },
   fieldGroup: {
     marginBottom: Spacing.md,
@@ -307,7 +317,6 @@ const styles = StyleSheet.create({
   },
   fieldIcon: {
     marginRight: Spacing.sm,
-    fontSize: Typography.sm,
   },
   fieldInput: {
     flex: 1,
@@ -317,9 +326,6 @@ const styles = StyleSheet.create({
   },
   toggleBtn: {
     padding: Spacing.xs,
-  },
-  toggleText: {
-    fontSize: Typography.base,
   },
   submitBtn: {
     flexDirection: 'row',
@@ -335,9 +341,6 @@ const styles = StyleSheet.create({
   submitBtnDisabled: {
     opacity: 0.4,
   },
-  submitIcon: {
-    fontSize: Typography.base,
-  },
   submitText: {
     color: '#fff',
     fontSize: Typography.base,
@@ -345,6 +348,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   demoBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,

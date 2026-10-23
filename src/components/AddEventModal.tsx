@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Modal,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { TimelineEvent } from '../lib/types';
 
@@ -65,7 +66,7 @@ export default function AddEventModal({
               <Text style={styles.headerTitle}>Add Floor Event</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Ionicons name="close" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -190,13 +191,8 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginTop: 2,
   },
-  closeBtn: {
-    padding: Spacing.xs,
-  },
-  closeBtnText: {
-    fontSize: 18,
-    color: Colors.textMuted,
-  },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center' },
+  closeBtnText: {},  // deprecated - using Ionicons directly
 
   body: {
     padding: Spacing.base,

@@ -7,13 +7,12 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
-  Alert,
   ScrollView,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { Lead } from '../lib/types';
 import { leadApi } from '../lib/api';
-import { INITIAL_LEADS } from '../lib/data';
 
 interface LeadsScreenProps {
   leads: Lead[];
@@ -26,11 +25,16 @@ interface LeadsScreenProps {
 
 const getStageColor = (stage?: string) => {
   switch (stage) {
-    case 'Imported': return { bg: '#f1f5f9', text: '#475569' };
-    case 'Engaged': return { bg: '#ecfeff', text: '#0e7490' };
-    case 'Qualified': return { bg: '#fffbeb', text: '#92400e' };
-    case 'Committed': return { bg: '#f0fdf4', text: '#166534' };
-    default: return { bg: '#f1f5f9', text: '#475569' };
+    case 'Imported':
+      return { bg: '#f1f5f9', text: '#475569', border: '#e2e8f0' };
+    case 'Engaged':
+      return { bg: '#ecfeff', text: '#0e7490', border: '#a5f3fc' };
+    case 'Qualified':
+      return { bg: '#fffbeb', text: '#92400e', border: '#fde68a' };
+    case 'Committed':
+      return { bg: '#ecfdf5', text: '#065f46', border: '#a7f3d0' };
+    default:
+      return { bg: '#f1f5f9', text: '#475569', border: '#e2e8f0' };
   }
 };
 
@@ -101,22 +105,25 @@ export default function LeadsScreen({
         <View style={styles.leadCardTop}>
           {lead.priority && <View style={styles.priorityIndicator} />}
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{lead.initials}</Text>
+            <Text style={styles.avatarText}>{lead.initials || 'BY'}</Text>
           </View>
 
           <View style={{ flex: 1, minWidth: 0 }}>
             <View style={styles.leadTopRow}>
               <Text style={styles.leadName} numberOfLines={1}>{lead.name}</Text>
-              <Text style={styles.leadScore}>{lead.score} pts</Text>
+              <View style={styles.scorePill}>
+                <Ionicons name="flame" size={11} color={Colors.brand} />
+                <Text style={styles.leadScore}>{lead.score || 75} pts</Text>
+              </View>
             </View>
             <View style={styles.leadMiddleRow}>
-              <View style={[styles.stagePill, { backgroundColor: stageColor.bg }]}>
+              <View style={[styles.stagePill, { backgroundColor: stageColor.bg, borderColor: stageColor.border }]}>
                 <Text style={[styles.stagePillText, { color: stageColor.text }]}>{lead.stage}</Text>
               </View>
-              <Text style={styles.leadSource}>{lead.source}</Text>
+              <Text style={styles.leadSource}>via {lead.source || 'Walk-in'}</Text>
             </View>
-            <Text style={styles.leadModel} numberOfLines={1}>{lead.model}</Text>
-            <Text style={styles.leadTouch} numberOfLines={1}>{lead.lastTouch}</Text>
+            <Text style={styles.leadModel} numberOfLines={1}>{lead.model || 'BYD Range'}</Text>
+            <Text style={styles.leadTouch} numberOfLines={1}>{lead.lastTouch || 'Active recently'}</Text>
           </View>
         </View>
 
@@ -125,20 +132,26 @@ export default function LeadsScreen({
           <TouchableOpacity
             style={styles.leadActionBtn}
             onPress={() => onOpenMessage(lead)}
+            activeOpacity={0.75}
           >
-            <Text style={styles.leadActionText}>💬 Message</Text>
+            <Ionicons name="chatbubble-outline" size={13} color={Colors.brand} />
+            <Text style={styles.leadActionText}>Message</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.leadActionBtn}
             onPress={() => onOpenBookDrive(lead)}
+            activeOpacity={0.75}
           >
-            <Text style={styles.leadActionText}>📅 Book Drive</Text>
+            <Ionicons name="calendar-outline" size={13} color={Colors.textSecondary} />
+            <Text style={styles.leadActionText}>Book Drive</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.leadActionBtn, styles.leadActionPrimary]}
             onPress={() => onSelectLead(lead)}
+            activeOpacity={0.75}
           >
-            <Text style={[styles.leadActionText, { color: '#fff' }]}>View →</Text>
+            <Text style={[styles.leadActionText, { color: '#ffffff' }]}>View</Text>
+            <Ionicons name="chevron-forward" size={13} color="#ffffff" />
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -150,8 +163,8 @@ export default function LeadsScreen({
       {/* Header */}
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerEyebrow}>Lead Centre</Text>
-          <Text style={styles.headerTitle}>MY LEADS</Text>
+          <Text style={styles.headerEyebrow}>LEAD CENTRE · PIPELINE</Text>
+          <Text style={styles.headerTitle}>Showroom Leads</Text>
         </View>
         <View style={styles.headerRightBtns}>
           {onOpenBulkMessage && (
@@ -160,11 +173,13 @@ export default function LeadsScreen({
               onPress={() => onOpenBulkMessage(leadsList)}
               activeOpacity={0.85}
             >
-              <Text style={styles.bulkBtnText}>💬 Bulk SMS</Text>
+              <Ionicons name="chatbox-ellipses-outline" size={14} color={Colors.textPrimary} />
+              <Text style={styles.bulkBtnText}>Bulk SMS</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity style={styles.addBtn} onPress={onOpenAddProspect} activeOpacity={0.85}>
-            <Text style={styles.addBtnText}>＋ Add</Text>
+            <Ionicons name="add" size={16} color="#ffffff" />
+            <Text style={styles.addBtnText}>Add Prospect</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -172,36 +187,47 @@ export default function LeadsScreen({
       {/* Search */}
       <View style={styles.searchRow}>
         <View style={styles.searchField}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search" size={17} color={Colors.textMuted} />
           <TextInput
             style={styles.searchInput}
             value={searchQuery}
             onChangeText={(v) => { setSearchQuery(v); }}
-            placeholder="Search by name, model, phone…"
+            placeholder="Search by name, vehicle model, phone…"
             placeholderTextColor={Colors.textMuted}
             clearButtonMode="while-editing"
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
       {/* Stage Filter Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
-        {STAGES.map(stage => (
-          <TouchableOpacity
-            key={stage}
-            style={[styles.filterTab, selectedStage === stage && styles.filterTabActive]}
-            onPress={() => setSelectedStage(stage)}
-          >
-            <Text style={[styles.filterTabText, selectedStage === stage && styles.filterTabTextActive]}>
-              {stage}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={styles.filterWrap}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterContent}>
+          {STAGES.map(stage => {
+            const isActive = selectedStage === stage;
+            return (
+              <TouchableOpacity
+                key={stage}
+                style={[styles.filterTab, isActive && styles.filterTabActive]}
+                onPress={() => setSelectedStage(stage)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.filterTabText, isActive && styles.filterTabTextActive]}>
+                  {stage}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
-      {/* Count */}
+      {/* Count summary bar */}
       <View style={styles.countRow}>
-        <Text style={styles.countText}>{leadsList.length} leads</Text>
+        <Text style={styles.countText}>{leadsList.length} prospects in pipeline</Text>
         {isLoading && <ActivityIndicator size="small" color={Colors.brand} />}
       </View>
 
@@ -214,9 +240,9 @@ export default function LeadsScreen({
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>👥</Text>
+            <Ionicons name="people-outline" size={44} color={Colors.textMuted} style={{ marginBottom: Spacing.sm }} />
             <Text style={styles.emptyTitle}>No leads found</Text>
-            <Text style={styles.emptySubtitle}>Adjust your filters or add a new prospect.</Text>
+            <Text style={styles.emptySubtitle}>Try adjusting your search query or pipeline filter.</Text>
           </View>
         }
       />
@@ -230,152 +256,268 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.md,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm + 2,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.lightBorder,
+    borderBottomColor: Colors.border,
   },
   headerEyebrow: {
     color: Colors.textMuted,
-    fontSize: Typography.xs,
-    fontWeight: Typography.bold,
+    fontSize: 10,
+    fontWeight: '800',
     letterSpacing: 0.8,
-    textTransform: 'uppercase',
   },
   headerTitle: {
     color: Colors.textPrimary,
-    fontSize: Typography.xl,
-    fontWeight: Typography.extrabold,
-    letterSpacing: -0.5,
+    fontSize: Typography.titleLarge.fontSize,
+    fontWeight: '800',
+    marginTop: 1,
   },
   headerRightBtns: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
+    gap: Spacing.xs + 2,
   },
   bulkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: '#f1f5f9',
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 7,
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  bulkBtnText: { color: Colors.textPrimary, fontSize: Typography.xs, fontWeight: Typography.bold },
+  bulkBtnText: {
+    color: Colors.textPrimary,
+    fontSize: Typography.xs,
+    fontWeight: '700',
+  },
   addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     backgroundColor: Colors.brand,
     borderRadius: BorderRadius.md,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.sm + 4,
+    paddingVertical: 7,
     ...Shadows.brand,
   },
-  addBtnText: { color: '#fff', fontSize: Typography.sm, fontWeight: Typography.bold },
+  addBtnText: {
+    color: '#ffffff',
+    fontSize: Typography.xs,
+    fontWeight: '700',
+  },
 
+  // Search
   searchRow: {
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.lightBorder,
+    backgroundColor: '#ffffff',
   },
   searchField: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.light,
+    backgroundColor: '#f1f5f9',
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    gap: Spacing.sm,
+    height: 40,
+    gap: Spacing.xs + 2,
   },
-  searchIcon: { fontSize: Typography.base },
   searchInput: {
     flex: 1,
-    color: Colors.textPrimary,
     fontSize: Typography.sm,
-    padding: 0,
+    color: Colors.textPrimary,
+    fontWeight: '500',
   },
 
-  filterRow: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: Colors.lightBorder },
-  filterContent: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, gap: Spacing.xs },
+  // Filter Tabs
+  filterWrap: {
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingBottom: Spacing.xs + 2,
+  },
+  filterContent: {
+    paddingHorizontal: Spacing.base,
+    gap: Spacing.xs,
+  },
   filterTab: {
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
+    paddingVertical: 5,
     borderRadius: BorderRadius.full,
     backgroundColor: '#f1f5f9',
   },
-  filterTabActive: { backgroundColor: Colors.brand },
-  filterTabText: { fontSize: Typography.xs, fontWeight: Typography.semibold, color: Colors.textSecondary },
-  filterTabTextActive: { color: '#fff' },
+  filterTabActive: {
+    backgroundColor: Colors.dark,
+  },
+  filterTabText: {
+    fontSize: Typography.xs,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  filterTabTextActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
 
   countRow: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: Spacing.base,
-    paddingVertical: Spacing.xs,
-    backgroundColor: '#f8fafc',
+    paddingVertical: Spacing.xs + 2,
   },
-  countText: { color: Colors.textMuted, fontSize: Typography.xs, fontWeight: Typography.medium },
+  countText: {
+    fontSize: Typography.xs,
+    fontWeight: '600',
+    color: Colors.textMuted,
+  },
 
-  listContent: { padding: Spacing.base, gap: Spacing.sm, paddingBottom: Spacing.xl },
-
+  listContent: {
+    paddingHorizontal: Spacing.base,
+    paddingBottom: Spacing.xxxl,
+    gap: Spacing.sm,
+  },
   leadCard: {
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     borderRadius: BorderRadius.lg,
-    padding: Spacing.md,
-    ...Shadows.sm,
+    padding: Spacing.base,
     borderWidth: 1,
-    borderColor: '#f1f5f9',
+    borderColor: Colors.border,
+    ...Shadows.sm,
   },
-  leadCardTop: { flexDirection: 'row', gap: Spacing.md, alignItems: 'flex-start' },
+  leadCardTop: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+  },
   priorityIndicator: {
-    position: 'absolute',
-    left: 0,
-    top: 4,
     width: 3,
-    height: 3,
+    height: 38,
     borderRadius: 2,
     backgroundColor: Colors.brand,
   },
   avatar: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: '#1e293b',
-    alignItems: 'center', justifyContent: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
     flexShrink: 0,
   },
-  avatarText: { color: '#fff', fontSize: Typography.sm, fontWeight: Typography.bold },
-  leadTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  leadName: { color: Colors.textPrimary, fontSize: Typography.base, fontWeight: Typography.bold, flex: 1 },
-  leadScore: { color: Colors.brand, fontSize: Typography.xs, fontWeight: Typography.bold, fontFamily: 'monospace' },
-  leadMiddleRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.xs, marginTop: 3 },
-  stagePill: { borderRadius: BorderRadius.full, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
-  stagePillText: { fontSize: Typography.xs - 1, fontWeight: Typography.semibold },
-  leadSource: { color: Colors.textMuted, fontSize: Typography.xs },
-  leadModel: { color: Colors.textSecondary, fontSize: Typography.sm, marginTop: 2 },
-  leadTouch: { color: Colors.textMuted, fontSize: Typography.xs - 1, marginTop: 1 },
+  avatarText: {
+    color: '#ffffff',
+    fontSize: Typography.sm,
+    fontWeight: '700',
+  },
+  leadTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  leadName: {
+    color: Colors.textPrimary,
+    fontSize: Typography.base,
+    fontWeight: '700',
+    flex: 1,
+  },
+  scorePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: Colors.brandSoft,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.xs,
+    borderWidth: 1,
+    borderColor: Colors.brandBorder,
+  },
+  leadScore: {
+    color: Colors.brand,
+    fontSize: 10,
+    fontWeight: '800',
+    fontFamily: 'monospace',
+  },
+  leadMiddleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+    marginTop: 4,
+  },
+  stagePill: {
+    borderRadius: BorderRadius.full,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 2,
+    borderWidth: 1,
+  },
+  stagePillText: {
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  leadSource: {
+    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: '500',
+  },
+  leadModel: {
+    color: Colors.textSecondary,
+    fontSize: Typography.xs + 1,
+    fontWeight: '600',
+    marginTop: 3,
+  },
+  leadTouch: {
+    color: Colors.textMuted,
+    fontSize: Typography.xs - 1,
+    marginTop: 1,
+  },
   leadActions: {
     flexDirection: 'row',
-    gap: Spacing.xs,
+    gap: Spacing.xs + 2,
     marginTop: Spacing.md,
     paddingTop: Spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#f1f5f9',
+    borderTopColor: Colors.borderSubtle,
   },
   leadActionBtn: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
     backgroundColor: '#f8fafc',
     borderRadius: BorderRadius.md,
-    paddingVertical: Spacing.xs + 2,
-    alignItems: 'center',
+    paddingVertical: 7,
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  leadActionPrimary: { backgroundColor: '#1e293b', borderColor: '#1e293b' },
-  leadActionText: { fontSize: Typography.xs, fontWeight: Typography.semibold, color: Colors.textSecondary },
+  leadActionPrimary: {
+    backgroundColor: Colors.dark,
+    borderColor: Colors.dark,
+  },
+  leadActionText: {
+    fontSize: Typography.xs,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
 
-  emptyState: { alignItems: 'center', paddingVertical: Spacing.xxxl },
-  emptyIcon: { fontSize: 40, marginBottom: Spacing.md },
-  emptyTitle: { color: Colors.textPrimary, fontSize: Typography.lg, fontWeight: Typography.bold },
-  emptySubtitle: { color: Colors.textMuted, fontSize: Typography.sm, marginTop: Spacing.xs, textAlign: 'center' },
+  emptyState: {
+    alignItems: 'center',
+    paddingVertical: Spacing.xxxl,
+  },
+  emptyTitle: {
+    color: Colors.textPrimary,
+    fontSize: Typography.base,
+    fontWeight: '700',
+  },
+  emptySubtitle: {
+    color: Colors.textMuted,
+    fontSize: Typography.xs,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
 });

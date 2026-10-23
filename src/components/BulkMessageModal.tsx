@@ -9,6 +9,7 @@ import {
   Modal,
   ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { Lead } from '../lib/types';
 import { DEFAULT_TEMPLATE_PACKS, interpolateTemplate } from '../lib/templateEngine';
@@ -98,14 +99,14 @@ export default function BulkMessageModal({
               </Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Ionicons name="close" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
             {resultSummary ? (
               <View style={styles.resultBox}>
-                <Text style={styles.resultIcon}>✓</Text>
+                <Ionicons name="checkmark-circle" size={20} color="#10b981" />
                 <Text style={styles.resultTitle}>Broadcast Dispatched</Text>
                 <Text style={styles.resultSub}>
                   Sent {resultSummary.sent} messages successfully. {resultSummary.suppressed} suppressed for opt-out compliance.
@@ -152,7 +153,7 @@ export default function BulkMessageModal({
                 {/* Compliance Indicator */}
                 <View style={[styles.complianceBadge, { backgroundColor: hasOptOut ? '#f0fdf4' : '#fffbeb' }]}>
                   <Text style={[styles.complianceText, { color: hasOptOut ? '#166534' : '#92400e' }]}>
-                    {hasOptOut ? '✓ ACMA Opt-out detected ("STOP")' : '⚠️ Missing "Reply STOP to opt out" clause'}
+                    {hasOptOut ? 'ACMA Opt-out detected ("STOP")' : 'Missing "Reply STOP to opt out" clause'}
                   </Text>
                 </View>
 
@@ -222,13 +223,8 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginTop: 2,
   },
-  closeBtn: {
-    padding: Spacing.xs,
-  },
-  closeBtnText: {
-    fontSize: 18,
-    color: Colors.textMuted,
-  },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center' },
+  closeBtnText: {},  // deprecated - using Ionicons directly
 
   body: {
     padding: Spacing.base,

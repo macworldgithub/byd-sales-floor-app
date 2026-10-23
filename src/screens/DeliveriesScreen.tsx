@@ -10,6 +10,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { Delivery } from '../lib/types';
 import { deliveryApi } from '../lib/api';
@@ -31,6 +32,19 @@ const getStageColor = (stage?: string) => {
     default: return { bg: '#f8fafc', text: '#475569', border: '#e2e8f0' };
   }
 };
+
+const getStageIcon = (stage?: string) => {
+  switch (stage) {
+    case 'Ready for Pickup': return 'checkmark-circle-outline';
+    case 'PDI': return 'construct-outline';
+    case 'In Transit': return 'car-outline';
+    case 'Delivered': return 'ribbon-outline';
+    case 'Scheduled': return 'calendar-outline';
+    default: return 'ellipse-outline';
+  }
+};
+
+const AVATAR_COLORS = ['#6366f1', '#0f172a', '#10b981', Colors.brand, '#f59e0b', '#8b5cf6'];
 
 export default function DeliveriesScreen({ deliveries, onCompleteHandover }: DeliveriesScreenProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,48 +103,53 @@ export default function DeliveriesScreen({ deliveries, onCompleteHandover }: Del
     );
   };
 
-  const renderDelivery = ({ item: delivery }: { item: Delivery }) => {
+  const renderDelivery = ({ item: delivery, index }: { item: Delivery; index: number }) => {
     const stageColor = getStageColor(delivery.stage);
+    const stageIcon = getStageIcon(delivery.stage);
     const isReady = delivery.stage === 'Ready for Pickup';
+    const avatarColor = AVATAR_COLORS[index % AVATAR_COLORS.length];
+    const initials = delivery.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
 
     return (
-      <View style={styles.deliveryCard}>
+      <View style={[styles.deliveryCard, isReady && styles.deliveryCardReady]}>
         {/* Header */}
         <View style={styles.deliveryCardHeader}>
-          <View style={styles.deliveryAvatar}>
-            <Text style={styles.deliveryAvatarText}>
-              {delivery.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
-            </Text>
+          <View style={[styles.deliveryAvatar, { backgroundColor: avatarColor }]}>
+            <Text style={styles.deliveryAvatarText}>{initials}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.deliveryName}>{delivery.name}</Text>
             <Text style={styles.deliveryVehicle} numberOfLines={1}>{delivery.vehicle}</Text>
           </View>
           <View style={[styles.stageBadge, { backgroundColor: stageColor.bg, borderColor: stageColor.border }]}>
+            <Ionicons name={stageIcon as any} size={11} color={stageColor.text} style={{ marginRight: 3 }} />
             <Text style={[styles.stageBadgeText, { color: stageColor.text }]}>{delivery.stage}</Text>
           </View>
         </View>
 
         {/* Details */}
         <View style={styles.deliveryDetails}>
+          {[
+            { icon: 'calendar-outline', label: 'Date', value: delivery.date || delivery.delivery_date || 'TBC' },
+            { icon: 'card-outline', label: 'Rego', value: delivery.rego || 'Pending', mono: true },
+            { icon: 'barcode-outline', label: 'VIN', value: delivery.vin || '—', mono: true },
+            { icon: 'person-outline', label: 'Agent', value: delivery.agent || delivery.salesperson || '—' },
+          ].map((row) => (
+            <View key={row.label} style={styles.deliveryDetailRow}>
+              <View style={styles.deliveryDetailLeft}>
+                <Ionicons name={row.icon as any} size={13} color={Colors.textMuted} />
+                <Text style={styles.deliveryDetailLabel}>{row.label}</Text>
+              </View>
+              <Text style={[styles.deliveryDetailValue, row.mono && { fontFamily: 'monospace' }]}>
+                {row.value}
+              </Text>
+            </View>
+          ))}
           <View style={styles.deliveryDetailRow}>
-            <Text style={styles.deliveryDetailLabel}>📅 Date</Text>
-            <Text style={styles.deliveryDetailValue}>{delivery.date || delivery.delivery_date || 'TBC'}</Text>
-          </View>
-          <View style={styles.deliveryDetailRow}>
-            <Text style={styles.deliveryDetailLabel}>🚗 Rego</Text>
-            <Text style={[styles.deliveryDetailValue, { fontFamily: 'monospace' }]}>{delivery.rego || 'Pending'}</Text>
-          </View>
-          <View style={styles.deliveryDetailRow}>
-            <Text style={styles.deliveryDetailLabel}>🔍 VIN</Text>
-            <Text style={[styles.deliveryDetailValue, { fontFamily: 'monospace' }]}>{delivery.vin || '—'}</Text>
-          </View>
-          <View style={styles.deliveryDetailRow}>
-            <Text style={styles.deliveryDetailLabel}>👤 Agent</Text>
-            <Text style={styles.deliveryDetailValue}>{delivery.agent || delivery.salesperson || '—'}</Text>
-          </View>
-          <View style={styles.deliveryDetailRow}>
-            <Text style={styles.deliveryDetailLabel}>📞 Contact</Text>
+            <View style={styles.deliveryDetailLeft}>
+              <Ionicons name="call-outline" size={13} color={Colors.textMuted} />
+              <Text style={styles.deliveryDetailLabel}>Contact</Text>
+            </View>
             <View style={[styles.contactBadge, { backgroundColor: delivery.status === 'Contacted' ? '#f0fdf4' : '#fef2f2' }]}>
               <Text style={[styles.contactBadgeText, { color: delivery.status === 'Contacted' ? '#166534' : '#991b1b' }]}>
                 {delivery.status || delivery.contact_status || 'Not contacted'}
@@ -146,7 +165,8 @@ export default function DeliveriesScreen({ deliveries, onCompleteHandover }: Del
             onPress={() => handleHandover(delivery)}
             activeOpacity={0.85}
           >
-            <Text style={styles.handoverBtnText}>✅ Complete Handover</Text>
+            <Ionicons name="checkmark-circle-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.handoverBtnText}>Complete Handover</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -162,6 +182,7 @@ export default function DeliveriesScreen({ deliveries, onCompleteHandover }: Del
           <Text style={styles.headerTitle}>DELIVERIES</Text>
         </View>
         <View style={styles.countBadge}>
+          <Ionicons name="cube-outline" size={13} color={Colors.textSecondary} style={{ marginRight: 4 }} />
           <Text style={styles.countBadgeText}>{deliveriesList.length} vehicles</Text>
         </View>
       </View>
@@ -169,7 +190,7 @@ export default function DeliveriesScreen({ deliveries, onCompleteHandover }: Del
       {/* Search */}
       <View style={styles.searchRow}>
         <View style={styles.searchField}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search-outline" size={16} color={Colors.textMuted} />
           <TextInput
             style={styles.searchInput}
             value={searchQuery}
@@ -178,23 +199,38 @@ export default function DeliveriesScreen({ deliveries, onCompleteHandover }: Del
             placeholderTextColor={Colors.textMuted}
             clearButtonMode="while-editing"
           />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
       </View>
 
       {/* Stage Filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterRow} contentContainerStyle={styles.filterContent}>
-        {STAGES.map(stage => (
-          <TouchableOpacity
-            key={stage}
-            style={[styles.filterTab, selectedStage === stage && styles.filterTabActive]}
-            onPress={() => setSelectedStage(stage)}
-          >
-            <Text style={[styles.filterTabText, selectedStage === stage && styles.filterTabTextActive]}>
-              {stage}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <View style={styles.filterWrap}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterContent}
+        >
+          {STAGES.map(stage => {
+            const isActive = selectedStage === stage;
+            return (
+              <TouchableOpacity
+                key={stage}
+                style={[styles.filterTab, isActive && styles.filterTabActive]}
+                onPress={() => setSelectedStage(stage)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.filterTabText, isActive && styles.filterTabTextActive]}>
+                  {stage}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {isLoading && (
         <View style={styles.loadingRow}>
@@ -210,7 +246,9 @@ export default function DeliveriesScreen({ deliveries, onCompleteHandover }: Del
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🚗</Text>
+            <View style={styles.emptyIconCircle}>
+              <Ionicons name="car-outline" size={36} color={Colors.textMuted} />
+            </View>
             <Text style={styles.emptyTitle}>No deliveries found</Text>
             <Text style={styles.emptySubtitle}>Check back when handovers are scheduled.</Text>
           </View>
@@ -230,7 +268,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.lightBorder,
+    borderBottomColor: Colors.border,
   },
   headerEyebrow: {
     color: Colors.textMuted,
@@ -246,12 +284,14 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
   },
   countBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#f8fafc',
     borderRadius: BorderRadius.md,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.xs + 2,
     borderWidth: 1,
-    borderColor: Colors.lightBorder,
+    borderColor: Colors.border,
   },
   countBadgeText: { color: Colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.semibold },
 
@@ -260,7 +300,7 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.lightBorder,
+    borderBottomColor: Colors.border,
   },
   searchField: {
     flexDirection: 'row',
@@ -271,20 +311,40 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.sm,
     gap: Spacing.sm,
   },
-  searchIcon: { fontSize: Typography.base },
   searchInput: { flex: 1, color: Colors.textPrimary, fontSize: Typography.sm, padding: 0 },
 
-  filterRow: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: Colors.lightBorder },
-  filterContent: { paddingHorizontal: Spacing.base, paddingVertical: Spacing.sm, gap: Spacing.xs },
-  filterTab: {
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.xs + 2,
-    borderRadius: BorderRadius.full,
-    backgroundColor: '#f1f5f9',
+  filterWrap: {
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    paddingVertical: 10,
   },
-  filterTabActive: { backgroundColor: Colors.brand },
-  filterTabText: { fontSize: Typography.xs, fontWeight: Typography.semibold, color: Colors.textSecondary },
-  filterTabTextActive: { color: '#fff' },
+  filterContent: {
+    paddingHorizontal: Spacing.base,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  filterTab: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 20,
+    backgroundColor: '#f1f5f9',
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  filterTabActive: {
+    backgroundColor: Colors.brand,
+  },
+  filterTabText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  filterTabTextActive: {
+    color: '#ffffff',
+    fontWeight: '700',
+  },
 
   loadingRow: { padding: Spacing.sm, alignItems: 'center' },
 
@@ -298,6 +358,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f1f5f9',
   },
+  deliveryCardReady: {
+    borderColor: '#bbf7d0',
+    borderLeftWidth: 3,
+  },
   deliveryCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -306,7 +370,6 @@ const styles = StyleSheet.create({
   },
   deliveryAvatar: {
     width: 44, height: 44, borderRadius: 22,
-    backgroundColor: '#0f172a',
     alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,
   },
@@ -314,6 +377,8 @@ const styles = StyleSheet.create({
   deliveryName: { color: Colors.textPrimary, fontSize: Typography.base, fontWeight: Typography.bold },
   deliveryVehicle: { color: Colors.textSecondary, fontSize: Typography.sm, marginTop: 1 },
   stageBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderRadius: BorderRadius.full,
     paddingHorizontal: Spacing.sm,
@@ -332,6 +397,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  deliveryDetailLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
   deliveryDetailLabel: { color: Colors.textMuted, fontSize: Typography.xs, fontWeight: Typography.medium },
   deliveryDetailValue: { color: Colors.textPrimary, fontSize: Typography.xs, fontWeight: Typography.semibold },
   contactBadge: { borderRadius: BorderRadius.full, paddingHorizontal: Spacing.sm, paddingVertical: 2 },
@@ -339,17 +409,24 @@ const styles = StyleSheet.create({
 
   handoverBtn: {
     marginTop: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: '#10b981',
     borderRadius: BorderRadius.md,
     paddingVertical: Spacing.md,
-    alignItems: 'center',
     ...Shadows.sm,
     shadowColor: '#10b981',
   },
   handoverBtnText: { color: '#fff', fontSize: Typography.sm, fontWeight: Typography.bold },
 
   emptyState: { alignItems: 'center', paddingVertical: Spacing.xxxl },
-  emptyIcon: { fontSize: 40, marginBottom: Spacing.md },
+  emptyIconCircle: {
+    width: 72, height: 72, borderRadius: 36,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: Spacing.md,
+  },
   emptyTitle: { color: Colors.textPrimary, fontSize: Typography.lg, fontWeight: Typography.bold },
   emptySubtitle: { color: Colors.textMuted, fontSize: Typography.sm, marginTop: Spacing.xs },
 });

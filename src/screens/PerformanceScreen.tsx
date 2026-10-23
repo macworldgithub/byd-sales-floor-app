@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 
 interface LeaderboardMember {
@@ -67,6 +68,13 @@ const LEADERBOARD: LeaderboardMember[] = [
   },
 ];
 
+const KPI_DATA = [
+  { label: 'Deals Sold', value: '41', sub: '82% of 50 target', icon: 'car-outline', color: Colors.textPrimary },
+  { label: 'Speed to Lead', value: '6.8m', sub: '94% within 15m SLA', icon: 'flash-outline', color: '#10b981' },
+  { label: 'Test Drive Rate', value: '38.5%', sub: 'Drive-to-order', icon: 'trending-up-outline', color: '#6366f1' },
+  { label: 'Floor CSI', value: '4.91', sub: '5.00 Star Rating', icon: 'star-outline', color: Colors.brand },
+];
+
 export default function PerformanceScreen() {
   const [filterPeriod, setFilterPeriod] = useState<'mtd' | 'qtd' | 'ytd'>('mtd');
 
@@ -97,43 +105,43 @@ export default function PerformanceScreen() {
       <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer} showsVerticalScrollIndicator={false}>
         {/* KPI Grid */}
         <View style={styles.kpiGrid}>
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>Deals Sold</Text>
-            <Text style={styles.kpiValue}>41</Text>
-            <Text style={styles.kpiSub}>82% of 50 target</Text>
-          </View>
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>Speed to Lead</Text>
-            <Text style={[styles.kpiValue, { color: '#10b981' }]}>6.8m</Text>
-            <Text style={styles.kpiSub}>94% within 15m SLA</Text>
-          </View>
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>Test Drive Rate</Text>
-            <Text style={styles.kpiValue}>38.5%</Text>
-            <Text style={styles.kpiSub}>Drive-to-order</Text>
-          </View>
-          <View style={styles.kpiCard}>
-            <Text style={styles.kpiLabel}>Floor CSI</Text>
-            <Text style={[styles.kpiValue, { color: Colors.brand }]}>4.91</Text>
-            <Text style={styles.kpiSub}>5.00 Star Rating</Text>
-          </View>
+          {KPI_DATA.map((kpi) => (
+            <View key={kpi.label} style={styles.kpiCard}>
+              <View style={[styles.kpiIconWrap, { backgroundColor: kpi.color + '15' }]}>
+                <Ionicons name={kpi.icon as any} size={18} color={kpi.color} />
+              </View>
+              <Text style={[styles.kpiValue, { color: kpi.color }]}>{kpi.value}</Text>
+              <Text style={styles.kpiLabel}>{kpi.label}</Text>
+              <Text style={styles.kpiSub}>{kpi.sub}</Text>
+            </View>
+          ))}
         </View>
 
         {/* Consultant Leaderboard */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>CONSULTANT SCOREBOARD</Text>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="trophy-outline" size={14} color={Colors.textMuted} style={{ marginRight: 5 }} />
+            <Text style={styles.sectionTitle}>CONSULTANT SCOREBOARD</Text>
+          </View>
           <Text style={styles.sectionSubtitle}>Rankings based on units sold, SLA compliance, and CSI satisfaction.</Text>
         </View>
 
         {LEADERBOARD.map((member) => {
           const targetPct = Math.round((member.unitsSold / member.monthlyTarget) * 100);
           const isTop = member.rank === 1;
+          const initials = member.name.split(' ').map(n => n[0]).join('').substring(0, 2);
 
           return (
             <View key={member.name} style={[styles.memberCard, isTop && styles.topMemberCard]}>
               <View style={styles.memberTopRow}>
                 <View style={[styles.rankBadge, isTop && styles.rankBadgeGold]}>
-                  <Text style={[styles.rankText, isTop && styles.rankTextGold]}>#{member.rank}</Text>
+                  {isTop
+                    ? <Ionicons name="trophy" size={14} color="#b45309" />
+                    : <Text style={styles.rankText}>#{member.rank}</Text>
+                  }
+                </View>
+                <View style={styles.memberAvatarWrap}>
+                  <Text style={styles.memberAvatarText}>{initials}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.memberName}>{member.name}</Text>
@@ -153,22 +161,31 @@ export default function PerformanceScreen() {
                   <Text style={styles.metricVal}>{member.unitsSold} / {member.monthlyTarget} units ({targetPct}%)</Text>
                 </View>
                 <View style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width: `${Math.min(targetPct, 100)}%` }]} />
+                  <View style={[styles.progressFill, { width: `${Math.min(targetPct, 100)}%` as any }]} />
                 </View>
               </View>
 
               {/* Stats Row */}
               <View style={styles.statsRow}>
                 <View style={styles.statCol}>
-                  <Text style={styles.statVal}>{member.slaCompliance}%</Text>
+                  <View style={styles.statIconRow}>
+                    <Ionicons name="shield-checkmark-outline" size={13} color={Colors.textMuted} />
+                    <Text style={styles.statVal}>{member.slaCompliance}%</Text>
+                  </View>
                   <Text style={styles.statLabel}>SLA Compliance</Text>
                 </View>
-                <View style={styles.statCol}>
-                  <Text style={styles.statVal}>{member.testDrivesDone}</Text>
+                <View style={[styles.statCol, styles.statColMiddle]}>
+                  <View style={styles.statIconRow}>
+                    <Ionicons name="car-outline" size={13} color={Colors.textMuted} />
+                    <Text style={styles.statVal}>{member.testDrivesDone}</Text>
+                  </View>
                   <Text style={styles.statLabel}>Test Drives</Text>
                 </View>
                 <View style={styles.statCol}>
-                  <Text style={styles.statVal}>★ {member.csiRating.toFixed(2)}</Text>
+                  <View style={styles.statIconRow}>
+                    <Ionicons name="star" size={13} color="#f59e0b" />
+                    <Text style={styles.statVal}>{member.csiRating.toFixed(2)}</Text>
+                  </View>
                   <Text style={styles.statLabel}>CSI Score</Text>
                 </View>
               </View>
@@ -224,9 +241,7 @@ const styles = StyleSheet.create({
     fontWeight: Typography.bold,
     color: Colors.textSecondary,
   },
-  periodTextActive: {
-    color: '#fff',
-  },
+  periodTextActive: { color: '#fff' },
 
   content: { flex: 1 },
   contentContainer: { padding: Spacing.base, paddingBottom: Spacing.xxxl },
@@ -240,22 +255,27 @@ const styles = StyleSheet.create({
   kpiCard: {
     width: '48%',
     backgroundColor: '#fff',
-    borderRadius: BorderRadius.md,
+    borderRadius: BorderRadius.lg,
     padding: Spacing.md,
     ...Shadows.sm,
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
-  kpiLabel: {
-    fontSize: Typography.xs,
-    color: Colors.textMuted,
-    fontWeight: Typography.semibold,
+  kpiIconWrap: {
+    width: 34, height: 34, borderRadius: 9,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: Spacing.xs,
   },
   kpiValue: {
     fontSize: Typography.xxl,
     fontWeight: Typography.bold,
-    color: Colors.textPrimary,
-    marginTop: 4,
+    marginTop: 2,
+  },
+  kpiLabel: {
+    fontSize: Typography.xs,
+    color: Colors.textMuted,
+    fontWeight: Typography.semibold,
+    marginTop: 2,
   },
   kpiSub: {
     fontSize: Typography.xs - 1,
@@ -264,6 +284,10 @@ const styles = StyleSheet.create({
   },
 
   sectionHeader: { marginBottom: Spacing.sm },
+  sectionTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   sectionTitle: {
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
@@ -274,6 +298,7 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs,
     color: Colors.textSecondary,
     marginTop: 2,
+    marginLeft: 19,
   },
 
   memberCard: {
@@ -295,23 +320,25 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   rankBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 28, height: 28, borderRadius: 14,
     backgroundColor: '#f1f5f9',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
   },
-  rankBadgeGold: {
-    backgroundColor: '#fef3c7',
-  },
+  rankBadgeGold: { backgroundColor: '#fef3c7' },
   rankText: {
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.textPrimary,
   },
-  rankTextGold: {
-    color: '#b45309',
+  memberAvatarWrap: {
+    width: 34, height: 34, borderRadius: 17,
+    backgroundColor: Colors.dark,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  memberAvatarText: {
+    color: '#fff',
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
   },
   memberName: {
     fontSize: Typography.base,
@@ -328,26 +355,13 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
     borderRadius: BorderRadius.full,
   },
-  statusTop: {
-    backgroundColor: 'rgba(230,0,18,0.08)',
-  },
-  statusNormal: {
-    backgroundColor: '#f0fdf4',
-  },
-  statusTagText: {
-    fontSize: 10,
-    fontWeight: '800',
-  },
-  statusTopText: {
-    color: Colors.brand,
-  },
-  statusNormalText: {
-    color: '#166534',
-  },
+  statusTop: { backgroundColor: 'rgba(230,0,18,0.08)' },
+  statusNormal: { backgroundColor: '#f0fdf4' },
+  statusTagText: { fontSize: 10, fontWeight: '800' },
+  statusTopText: { color: Colors.brand },
+  statusNormalText: { color: '#166534' },
 
-  metricProgressWrap: {
-    marginTop: Spacing.md,
-  },
+  metricProgressWrap: { marginTop: Spacing.md },
   metricLabels: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -384,6 +398,16 @@ const styles = StyleSheet.create({
   statCol: {
     flex: 1,
     alignItems: 'center',
+  },
+  statColMiddle: {
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: '#f1f5f9',
+  },
+  statIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   statVal: {
     fontSize: Typography.sm,

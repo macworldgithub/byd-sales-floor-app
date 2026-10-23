@@ -8,6 +8,7 @@ import {
   Modal,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { TimelineEvent } from '../lib/types';
 import { appointmentApi } from '../lib/api';
@@ -37,6 +38,16 @@ const getEventColor = (type: TimelineEvent['type']) => {
       return { border: '#64748b', bg: '#f8fafc', text: '#334155', label: 'FLOOR DUTY' };
     default:
       return { border: '#94a3b8', bg: '#f8fafc', text: '#475569', label: 'EVENT' };
+  }
+};
+
+const getEventIcon = (type: TimelineEvent['type']) => {
+  switch (type) {
+    case 'drive': return 'car-sport-outline';
+    case 'delivery': return 'cube-outline';
+    case 'followup': return 'chatbubble-ellipses-outline';
+    case 'hold': return 'time-outline';
+    default: return 'calendar-outline';
   }
 };
 
@@ -77,6 +88,7 @@ export default function CalendarScreen({
       {/* Feedback Toast */}
       {feedback && (
         <View style={styles.toast}>
+          <Ionicons name="checkmark-circle" size={16} color="#fff" style={{ marginRight: 6 }} />
           <Text style={styles.toastText}>{feedback}</Text>
         </View>
       )}
@@ -89,19 +101,24 @@ export default function CalendarScreen({
         </View>
         <View style={styles.headerButtons}>
           <TouchableOpacity style={styles.addBtn} onPress={onOpenAddEvent} activeOpacity={0.8}>
-            <Text style={styles.addBtnText}>＋ Event</Text>
+            <Ionicons name="add" size={14} color={Colors.textPrimary} />
+            <Text style={styles.addBtnText}>Event</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.bookBtn} onPress={onOpenBookDrive} activeOpacity={0.8}>
-            <Text style={styles.bookBtnText}>📅 Drive</Text>
+            <Ionicons name="calendar" size={14} color="#fff" />
+            <Text style={styles.bookBtnText}>Drive</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* Segmented View Mode */}
       <View style={styles.segmentedContainer}>
-        {(['myDay', 'week', 'loops'] as const).map((mode) => {
+        {([
+          { mode: 'myDay', label: 'My Schedule', icon: 'today-outline' },
+          { mode: 'week', label: 'Week View', icon: 'calendar-outline' },
+          { mode: 'loops', label: 'Demo Loops', icon: 'navigate-outline' },
+        ] as const).map(({ mode, label, icon }) => {
           const isActive = viewMode === mode;
-          const label = mode === 'myDay' ? 'My Schedule' : mode === 'week' ? 'Week View' : 'Demo Loops';
           return (
             <TouchableOpacity
               key={mode}
@@ -109,6 +126,12 @@ export default function CalendarScreen({
               onPress={() => setViewMode(mode)}
               activeOpacity={0.8}
             >
+              <Ionicons
+                name={icon}
+                size={13}
+                color={isActive ? '#fff' : Colors.textSecondary}
+                style={{ marginRight: 4 }}
+              />
               <Text style={[styles.segmentBtnText, isActive && styles.segmentBtnTextActive]}>
                 {label}
               </Text>
@@ -131,7 +154,10 @@ export default function CalendarScreen({
                   <View style={styles.loopBadge}>
                     <Text style={styles.loopBadgeText}>LOOP {String.fromCharCode(65 + idx)}</Text>
                   </View>
-                  <Text style={styles.loopDistance}>{loop.distance} · {loop.duration}</Text>
+                  <View style={styles.loopMeta}>
+                    <Ionicons name="map-outline" size={12} color={Colors.textMuted} />
+                    <Text style={styles.loopDistance}>{loop.distance} · {loop.duration}</Text>
+                  </View>
                 </View>
                 <Text style={styles.loopName}>{loop.name}</Text>
                 <Text style={styles.loopFocus}>Focus: {loop.focus}</Text>
@@ -140,7 +166,9 @@ export default function CalendarScreen({
                   onPress={onOpenBookDrive}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.loopActionText}>Book This Loop →</Text>
+                  <Ionicons name="car-sport-outline" size={14} color={Colors.brand} style={{ marginRight: 6 }} />
+                  <Text style={styles.loopActionText}>Book This Loop</Text>
+                  <Ionicons name="arrow-forward" size={14} color={Colors.brand} style={{ marginLeft: 'auto' }} />
                 </TouchableOpacity>
               </View>
             ))}
@@ -151,21 +179,29 @@ export default function CalendarScreen({
               <Text style={styles.dateBannerTitle}>
                 {viewMode === 'myDay' ? 'Today · Monday 8 Sep' : 'Week Schedule (8 - 14 Sep)'}
               </Text>
-              <Text style={styles.dateBannerBadge}>
-                {timelineEvents.length} Appts
-              </Text>
+              <View style={styles.dateBannerBadgePill}>
+                <Ionicons name="calendar-outline" size={11} color={Colors.brand} style={{ marginRight: 4 }} />
+                <Text style={styles.dateBannerBadge}>
+                  {timelineEvents.length} Appts
+                </Text>
+              </View>
             </View>
 
             {timelineEvents.length === 0 ? (
               <View style={styles.emptyContainer}>
+                <View style={styles.emptyIconWrap}>
+                  <Ionicons name="calendar-outline" size={32} color={Colors.textMuted} />
+                </View>
                 <Text style={styles.emptyText}>No appointments scheduled.</Text>
                 <TouchableOpacity style={styles.emptyBtn} onPress={onOpenBookDrive}>
+                  <Ionicons name="car-sport-outline" size={14} color="#fff" style={{ marginRight: 6 }} />
                   <Text style={styles.emptyBtnText}>Book Test Drive</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               timelineEvents.map((evt, idx) => {
                 const colors = getEventColor(evt.type);
+                const iconName = getEventIcon(evt.type);
                 return (
                   <TouchableOpacity
                     key={`${evt.time}-${idx}`}
@@ -181,12 +217,16 @@ export default function CalendarScreen({
                       </View>
                     </View>
 
+                    <View style={[styles.eventIconWrap, { backgroundColor: colors.bg }]}>
+                      <Ionicons name={iconName as any} size={16} color={colors.text} />
+                    </View>
+
                     <View style={styles.eventDetailCol}>
                       <Text style={styles.eventTitle} numberOfLines={1}>{evt.title}</Text>
                       <Text style={styles.eventDetail} numberOfLines={2}>{evt.detail}</Text>
                     </View>
 
-                    <Text style={styles.eventArrow}>›</Text>
+                    <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
                   </TouchableOpacity>
                 );
               })
@@ -204,24 +244,31 @@ export default function CalendarScreen({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalSheet}>
+            <View style={styles.modalHandle} />
             <View style={styles.modalHeader}>
               <View>
                 <Text style={styles.modalEyebrow}>APPOINTMENT OUTCOME</Text>
                 <Text style={styles.modalTitle} numberOfLines={1}>{selectedEvent?.title}</Text>
               </View>
               <TouchableOpacity onPress={() => setSelectedEvent(null)} style={styles.modalCloseBtn}>
-                <Text style={styles.modalCloseText}>✕</Text>
+                <Ionicons name="close" size={20} color={Colors.textMuted} />
               </TouchableOpacity>
             </View>
 
             <View style={styles.modalBody}>
               <View style={styles.modalInfoRow}>
-                <Text style={styles.modalInfoLabel}>Time Slot</Text>
+                <View style={styles.modalInfoLeft}>
+                  <Ionicons name="time-outline" size={14} color={Colors.textMuted} />
+                  <Text style={styles.modalInfoLabel}>Time Slot</Text>
+                </View>
                 <Text style={styles.modalInfoVal}>{selectedEvent?.time} - {selectedEvent?.end}</Text>
               </View>
               <View style={styles.modalInfoRow}>
-                <Text style={styles.modalInfoLabel}>Vehicle / Details</Text>
-                <Text style={styles.modalInfoVal}>{selectedEvent?.detail}</Text>
+                <View style={styles.modalInfoLeft}>
+                  <Ionicons name="car-outline" size={14} color={Colors.textMuted} />
+                  <Text style={styles.modalInfoLabel}>Vehicle / Details</Text>
+                </View>
+                <Text style={styles.modalInfoVal} numberOfLines={2}>{selectedEvent?.detail}</Text>
               </View>
 
               <Text style={styles.modalOutcomeHeader}>Record Appointment Result:</Text>
@@ -233,7 +280,8 @@ export default function CalendarScreen({
                   disabled={isProcessing}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.outcomeBtnText}>✓ Met & Completed</Text>
+                  <Ionicons name="checkmark-circle-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
+                  <Text style={styles.outcomeBtnText}>Met & Completed</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -242,7 +290,8 @@ export default function CalendarScreen({
                   disabled={isProcessing}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.outcomeBtnText}>✕ Customer No Show</Text>
+                  <Ionicons name="close-circle-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
+                  <Text style={styles.outcomeBtnText}>No Show</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -283,6 +332,9 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   addBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: Spacing.sm + 2,
     paddingVertical: Spacing.xs + 2,
     backgroundColor: '#fff',
@@ -296,6 +348,9 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
   },
   bookBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     paddingHorizontal: Spacing.sm + 4,
     paddingVertical: Spacing.xs + 2,
     backgroundColor: Colors.brand,
@@ -319,8 +374,10 @@ const styles = StyleSheet.create({
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: Spacing.xs + 2,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.xs + 2,
     borderRadius: BorderRadius.sm,
     backgroundColor: '#f1f5f9',
   },
@@ -328,7 +385,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.dark,
   },
   segmentBtnText: {
-    fontSize: Typography.xs,
+    fontSize: Typography.xs - 1,
     fontWeight: Typography.semibold,
     color: Colors.textSecondary,
   },
@@ -350,14 +407,18 @@ const styles = StyleSheet.create({
     fontWeight: Typography.bold,
     color: Colors.textPrimary,
   },
+  dateBannerBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(230,0,18,0.08)',
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
   dateBannerBadge: {
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.brand,
-    backgroundColor: 'rgba(230,0,18,0.08)',
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: BorderRadius.full,
   },
 
   scheduleContainer: { gap: Spacing.sm },
@@ -373,7 +434,7 @@ const styles = StyleSheet.create({
   },
   eventTimeCol: {
     alignItems: 'center',
-    width: 65,
+    width: 60,
     borderRightWidth: 1,
     borderRightColor: '#f1f5f9',
     paddingRight: Spacing.xs,
@@ -396,8 +457,13 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   typeBadgeText: {
-    fontSize: 8,
+    fontSize: 7,
     fontWeight: '800',
+  },
+  eventIconWrap: {
+    width: 32, height: 32, borderRadius: 8,
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
   },
   eventDetailCol: {
     flex: 1,
@@ -412,11 +478,6 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
     lineHeight: 16,
-  },
-  eventArrow: {
-    fontSize: 20,
-    color: Colors.textMuted,
-    paddingLeft: Spacing.xs,
   },
 
   // Loops
@@ -458,6 +519,11 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 1,
   },
+  loopMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
   loopDistance: {
     fontSize: Typography.xs,
     color: Colors.textSecondary,
@@ -477,6 +543,8 @@ const styles = StyleSheet.create({
   loopActionBtn: {
     marginTop: Spacing.sm,
     paddingVertical: Spacing.xs + 2,
+    paddingHorizontal: Spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(230,0,18,0.06)',
     borderRadius: BorderRadius.md,
@@ -493,12 +561,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: BorderRadius.md,
   },
+  emptyIconWrap: {
+    width: 64, height: 64, borderRadius: 32,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: Spacing.md,
+  },
   emptyText: {
     color: Colors.textMuted,
     fontSize: Typography.sm,
     marginBottom: Spacing.md,
   },
   emptyBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: Colors.brand,
     paddingHorizontal: Spacing.base,
     paddingVertical: Spacing.sm,
@@ -523,6 +599,12 @@ const styles = StyleSheet.create({
     padding: Spacing.lg,
     maxHeight: '80%',
   },
+  modalHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: '#e2e8f0',
+    alignSelf: 'center',
+    marginBottom: Spacing.md,
+  },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -544,11 +626,9 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   modalCloseBtn: {
-    padding: Spacing.xs,
-  },
-  modalCloseText: {
-    fontSize: 18,
-    color: Colors.textMuted,
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: '#f8fafc',
+    alignItems: 'center', justifyContent: 'center',
   },
   modalBody: {
     paddingTop: Spacing.md,
@@ -557,9 +637,15 @@ const styles = StyleSheet.create({
   modalInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingVertical: Spacing.xs,
     borderBottomWidth: 1,
     borderBottomColor: '#f8fafc',
+  },
+  modalInfoLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   modalInfoLabel: {
     fontSize: Typography.xs,
@@ -569,6 +655,8 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs,
     fontWeight: Typography.medium,
     color: Colors.textPrimary,
+    maxWidth: '55%',
+    textAlign: 'right',
   },
   modalOutcomeHeader: {
     fontSize: Typography.sm,
@@ -583,8 +671,10 @@ const styles = StyleSheet.create({
   },
   outcomeBtn: {
     flex: 1,
-    paddingVertical: Spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
   },
   outcomeCompleted: {
@@ -608,6 +698,7 @@ const styles = StyleSheet.create({
     padding: Spacing.md,
     borderRadius: BorderRadius.md,
     zIndex: 99,
+    flexDirection: 'row',
     alignItems: 'center',
     ...Shadows.md,
   },

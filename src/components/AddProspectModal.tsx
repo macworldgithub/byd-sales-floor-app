@@ -11,6 +11,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { Lead } from '../lib/types';
 
@@ -74,7 +75,7 @@ export default function AddProspectModal({ visible, onClose, onAddLead }: AddPro
               <Text style={styles.headerTitle}>Add Prospect</Text>
             </View>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕</Text>
+              <Ionicons name="close" size={20} color={Colors.textMuted} />
             </TouchableOpacity>
           </View>
 
@@ -208,7 +209,7 @@ export default function AddProspectModal({ visible, onClose, onAddLead }: AddPro
               disabled={isSubmitting}
               activeOpacity={0.85}
             >
-              <Text style={styles.submitBtnText}>{isSubmitting ? 'Adding…' : '✅ Add to Pipeline'}</Text>
+              {!isSubmitting && <Ionicons name="person-add-outline" size={15} color="#fff" style={{ marginRight: 6 }} />}<Text style={styles.submitBtnText}>{isSubmitting ? 'Adding…' : 'Add to Pipeline'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -232,8 +233,8 @@ const styles = StyleSheet.create({
   },
   headerEyebrow: { color: Colors.textMuted, fontSize: Typography.xs, fontWeight: Typography.bold, letterSpacing: 0.8, textTransform: 'uppercase' },
   headerTitle: { color: Colors.textPrimary, fontSize: Typography.xl, fontWeight: Typography.extrabold },
-  closeBtn: { padding: Spacing.xs },
-  closeBtnText: { color: Colors.textSecondary, fontSize: Typography.lg },
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#f8fafc', alignItems: 'center', justifyContent: 'center' },
+  closeBtnText: {},  // deprecated - using Ionicons directly
 
   body: { flex: 1, padding: Spacing.base },
   sectionLabel: {
