@@ -4,9 +4,9 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import * as Font from 'expo-font';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,7 +19,7 @@ import {
   CONVERSATION_THREADS,
 } from './src/lib/data';
 import { Lead, Delivery, TimelineEvent, ConversationThread, UserRole } from './src/lib/types';
-import { messageApi, leadApi, appointmentApi } from './src/lib/api';
+import { messageApi, leadApi, appointmentApi, deliveryApi, conversationApi } from './src/lib/api';
 
 // Header
 import AppHeader from './src/components/AppHeader';
@@ -37,6 +37,9 @@ import PerformanceScreen from './src/screens/PerformanceScreen';
 import StaffScreen from './src/screens/StaffScreen';
 import TemplateStudioScreen from './src/screens/TemplateStudioScreen';
 import SequencesScreen from './src/screens/SequencesScreen';
+import InventoryScreen from './src/screens/InventoryScreen';
+import PulseDashboardScreen from './src/screens/PulseDashboardScreen';
+import IAppraiseScreen from './src/screens/IAppraiseScreen';
 
 // Modals
 import MessageModal from './src/components/MessageModal';
@@ -46,6 +49,8 @@ import Customer360Modal from './src/components/Customer360Modal';
 import NotificationCenterModal from './src/components/NotificationCenterModal';
 import BulkMessageModal from './src/components/BulkMessageModal';
 import AddEventModal from './src/components/AddEventModal';
+import DealRegistrationModal from './src/components/DealRegistrationModal';
+import { InventoryVehicle, DealRecord } from './src/lib/types';
 
 type MainTabId = 'today' | 'leads' | 'conversations' | 'deliveries' | 'more';
 type ActiveView =
@@ -55,7 +60,10 @@ type ActiveView =
   | 'reports'
   | 'templates'
   | 'staff'
-  | 'sequences';
+  | 'sequences'
+  | 'inventory'
+  | 'pulse'
+  | 'appraisal';
 
 interface TabItemDef {
   id: MainTabId;
@@ -148,6 +156,60 @@ function AppShell() {
   const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>(TODAY_TIMELINE_EVENTS);
   const [threads, setThreads] = useState<ConversationThread[]>(CONVERSATION_THREADS);
 
+  // Fetch real backend data from MongoDB when authenticated
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    let isMounted = true;
+
+    const loadBackendData = async () => {
+      try {
+        const [leadsRes, deliveriesRes, convsRes, apptsRes] = await Promise.allSettled([
+          leadApi.getLeads({ limit: '50' }),
+          deliveryApi.getClients({ limit: '50' }),
+          conversationApi.getConversations({ limit: '50' }),
+          appointmentApi.getAppointments(),
+        ]);
+
+        if (!isMounted) return;
+
+        if (leadsRes.status === 'fulfilled' && leadsRes.value?.success && leadsRes.value?.data && leadsRes.value.data.length > 0) {
+          setLeads(leadsRes.value.data);
+        }
+
+        if (deliveriesRes.status === 'fulfilled' && deliveriesRes.value?.success && deliveriesRes.value?.data && deliveriesRes.value.data.length > 0) {
+          setDeliveries(deliveriesRes.value.data);
+        }
+
+        if (convsRes.status === 'fulfilled' && convsRes.value?.success && convsRes.value?.data && convsRes.value.data.length > 0) {
+          setThreads(convsRes.value.data);
+        }
+
+        if (apptsRes.status === 'fulfilled' && apptsRes.value?.success && apptsRes.value?.data && apptsRes.value.data.length > 0) {
+          const mappedEvents: TimelineEvent[] = apptsRes.value.data.map((appt) => {
+            const timePart = appt.when ? appt.when.split('T')[1]?.slice(0, 5) || '10:00' : '10:00';
+            return {
+              time: timePart,
+              end: `${parseInt(timePart.split(':')[0], 10) + 1}:00`,
+              title: `${appt.type || 'Appointment'} · ${appt.prospectName}`,
+              detail: `${appt.vehicle || 'BYD Model'} · ${appt.notes || 'Showroom appointment'}`,
+              type: appt.type === 'Test Drive' ? 'drive' : 'followup',
+            };
+          });
+          setTimelineEvents((prev) => [...mappedEvents, ...prev]);
+        }
+      } catch (err) {
+        // Fallback gracefully to offline initial data
+      }
+    };
+
+    loadBackendData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isAuthenticated]);
+
   // Modal states
   const [messageModalVisible, setMessageModalVisible] = useState(false);
   const [messageModalLead, setMessageModalLead] = useState<Lead | null>(null);
@@ -160,6 +222,9 @@ function AppShell() {
   const [bulkMessageVisible, setBulkMessageVisible] = useState(false);
   const [bulkMessageLeads, setBulkMessageLeads] = useState<Lead[]>([]);
   const [addEventVisible, setAddEventVisible] = useState(false);
+  const [dealModalVisible, setDealModalVisible] = useState(false);
+  const [selectedVehicleForDeal, setSelectedVehicleForDeal] = useState<InventoryVehicle | null>(null);
+  const [selectedLeadForDeal, setSelectedLeadForDeal] = useState<Lead | null>(null);
 
   const unreadCount = threads.filter((t) => (t.unreadCount ?? 0) > 0).length;
 
@@ -171,6 +236,17 @@ function AppShell() {
   const handleOpenBookDrive = useCallback((lead?: Lead | null) => {
     setBookDriveLead(lead ?? null);
     setBookDriveVisible(true);
+  }, []);
+
+  const handleOpenDealRegistration = useCallback((lead?: Lead | null, vehicle?: InventoryVehicle | null) => {
+    setSelectedLeadForDeal(lead ?? selectedLead ?? null);
+    setSelectedVehicleForDeal(vehicle ?? null);
+    setDealModalVisible(true);
+  }, [selectedLead]);
+
+  const handleOpenAppraisal = useCallback((lead?: Lead | null) => {
+    if (lead) setSelectedLead(lead);
+    setActiveView('appraisal');
   }, []);
 
   const handleOpenAddProspect = useCallback(() => {
@@ -307,6 +383,9 @@ function AppShell() {
     'templates',
     'staff',
     'sequences',
+    'inventory',
+    'pulse',
+    'appraisal',
   ].includes(activeView);
 
   const renderScreen = () => {
@@ -393,6 +472,51 @@ function AppShell() {
         return <StaffScreen />;
       case 'sequences':
         return <SequencesScreen onNavigateTab={handleNavigateTab} />;
+      case 'inventory':
+        return (
+          <InventoryScreen
+            role={role}
+            onSelectVehicleForDeal={(vehicle) => {
+              handleOpenDealRegistration(null, vehicle);
+            }}
+            onOpenBookDrive={() => {
+              handleOpenBookDrive(null);
+            }}
+          />
+        );
+      case 'pulse':
+        return (
+          <PulseDashboardScreen
+            leads={leads}
+            onSelectLead={handleSelectLead}
+            onNavigateTab={handleNavigateTab}
+          />
+        );
+      case 'appraisal':
+        return (
+          <IAppraiseScreen
+            lead={selectedLead}
+            onAppraisalCompleted={(appraisal) => {
+              if (selectedLead) {
+                setLeads((prev) =>
+                  prev.map((l) =>
+                    l.id === selectedLead.id
+                      ? {
+                          ...l,
+                          tradeInRego: appraisal.rego,
+                          tradeInVin: appraisal.vin,
+                          ppsrStatus: appraisal.ppsrStatus,
+                          appraisalRecord: appraisal,
+                        }
+                      : l
+                  )
+                );
+              }
+              setActiveView('more');
+            }}
+            onNavigateBack={() => setActiveView('more')}
+          />
+        );
     }
   };
 
@@ -451,6 +575,7 @@ function AppShell() {
         visible={addProspectVisible}
         onClose={() => setAddProspectVisible(false)}
         onAddLead={handleAddLead}
+        existingLeads={leads}
       />
 
       <BookDriveModal
@@ -472,8 +597,35 @@ function AppShell() {
           setCustomer360Visible(false);
           handleOpenMessage(lead);
         }}
+        onOpenDealRegistration={(lead) => {
+          setCustomer360Visible(false);
+          handleOpenDealRegistration(lead, null);
+        }}
+        onOpenAppraisal={(lead) => {
+          setCustomer360Visible(false);
+          handleOpenAppraisal(lead);
+        }}
         onUpdateStage={handleUpdateStage}
         onAddNote={handleAddNote}
+      />
+
+      <DealRegistrationModal
+        visible={dealModalVisible}
+        lead={selectedLeadForDeal}
+        selectedVehicle={selectedVehicleForDeal}
+        onClose={() => setDealModalVisible(false)}
+        onDealRegistered={(deal: DealRecord) => {
+          if (deal.leadId) {
+            setLeads((prev) =>
+              prev.map((l) =>
+                String(l._id || l.id) === String(deal.leadId)
+                  ? { ...l, stage: 'Committed', dealRecord: deal }
+                  : l
+              )
+            );
+          }
+          setDealModalVisible(false);
+        }}
       />
 
       <NotificationCenterModal

@@ -30,18 +30,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const token = await getToken();
         if (token) {
-          // Restore from stored token - in a real app you'd validate the token
-          setUser({
-            email: 'admin@byd.com',
-            name: 'Alex Rivers',
-            role: 'super_admin',
-            location: 'Melbourne CBD',
-            phone: '+61 412 345 678',
-            token,
-          });
+          // Validate stored token against the live backend
+          const res = await authApi.getMe();
+          if (res?.success && res?.data) {
+            const u = res.data;
+            setUser({
+              email: u.email,
+              name: u.name || 'Sales Consultant',
+              role: u.role || 'sales_consultant',
+              location: u.site || u.active_site || 'BYD Dealership',
+              phone: u.phone || u.contractor_phone || '',
+              token,
+            });
+          } else {
+            // Token rejected by backend
+            await clearToken();
+            setUser(null);
+          }
+        } else {
+          setUser(null);
         }
       } catch (err) {
-        // Token check failed
+        // Expired or invalid token
+        await clearToken();
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
@@ -50,32 +62,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (email: string, password: string) => {
-    try {
-      const res = await authApi.login(email, password);
-      const userData: AuthUser = {
-        email: res.user?.email || email,
-        name: res.user?.name || 'Alex Rivers',
-        role: res.user?.role || 'super_admin',
-        location: 'Melbourne CBD',
-        phone: '+61 412 345 678',
-        token: res.token,
-      };
-      setUser(userData);
-    } catch (err: any) {
-      // Demo fallback: accept any login for demo purposes
-      if (email && password) {
-        const userData: AuthUser = {
-          email,
-          name: 'Alex Rivers',
-          role: 'super_admin',
-          location: 'Melbourne CBD',
-          phone: '+61 412 345 678',
-        };
-        setUser(userData);
-      } else {
-        throw err;
-      }
-    }
+    // Strictly authenticate against the backend. No demo fallback bypass.
+    const res = await authApi.login(email, password);
+    const u = res.user;
+    const userData: AuthUser = {
+      email: u?.email || email,
+      name: u?.name || 'Sales Consultant',
+      role: u?.role || 'sales_consultant',
+      location: u?.site || u?.active_site || 'BYD Dealership',
+      phone: u?.phone || u?.contractor_phone || '',
+      token: res.token,
+    };
+    setUser(userData);
   };
 
   const logout = async () => {

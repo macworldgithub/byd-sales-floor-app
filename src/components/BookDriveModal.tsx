@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { Lead } from '../lib/types';
 import { appointmentApi } from '../lib/api';
+import LicenceScannerModal, { ScannedLicenceData } from './LicenceScannerModal';
 
 interface BookDriveModalProps {
   visible: boolean;
@@ -58,6 +59,8 @@ export default function BookDriveModal({
   const [duration, setDuration] = useState('45 min');
   const [location, setLocation] = useState('Demo loop B (Urban Dynamic)');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [scannerVisible, setScannerVisible] = useState(false);
+  const [scannedLicence, setScannedLicence] = useState<ScannedLicenceData | null>(null);
 
   useEffect(() => {
     if (lead?.name) setCustomerName(lead.name);
@@ -118,8 +121,17 @@ export default function BookDriveModal({
           </View>
 
           <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
-            {/* Customer name */}
-            <Text style={styles.label}>Customer Name</Text>
+            {/* Customer name & Licence OCR */}
+            <View style={styles.customerHeaderRow}>
+              <Text style={styles.label}>Customer Name</Text>
+              <TouchableOpacity
+                style={styles.scanLicenceBtn}
+                onPress={() => setScannerVisible(true)}
+              >
+                <Ionicons name="camera-outline" size={14} color={Colors.primary} />
+                <Text style={styles.scanLicenceBtnText}>Scan Licence</Text>
+              </TouchableOpacity>
+            </View>
             <TextInput
               style={styles.input}
               value={customerName}
@@ -127,6 +139,23 @@ export default function BookDriveModal({
               placeholder="e.g. John Doe"
               placeholderTextColor="#94a3b8"
             />
+
+            {scannedLicence && (
+              <View style={styles.scannedLicenceBadge}>
+                <Ionicons name="shield-checkmark" size={16} color={Colors.success} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.scannedLicenceTitle}>
+                    {scannedLicence.state} Licence: {scannedLicence.licenceNumber} (Exp: {scannedLicence.expiryDate})
+                  </Text>
+                  <Text style={styles.scannedLicenceSub}>
+                    DOB: {scannedLicence.dateOfBirth} · Class: {scannedLicence.classType}
+                  </Text>
+                </View>
+                <TouchableOpacity onPress={() => setScannedLicence(null)}>
+                  <Ionicons name="close-circle" size={16} color={Colors.textTertiary} />
+                </TouchableOpacity>
+              </View>
+            )}
 
             {/* Vehicle Selection */}
             <Text style={styles.label}>Demonstrator Fleet</Text>
@@ -217,6 +246,17 @@ export default function BookDriveModal({
           </View>
         </View>
       </View>
+
+      <LicenceScannerModal
+        visible={scannerVisible}
+        onClose={() => setScannerVisible(false)}
+        onLicenceScanned={(data) => {
+          setScannedLicence(data);
+          if (data.fullName) {
+            setCustomerName(data.fullName);
+          }
+        }}
+      />
     </Modal>
   );
 }
@@ -444,5 +484,47 @@ const styles = StyleSheet.create({
     fontSize: Typography.bodyMedium.fontSize,
     fontWeight: '700',
     color: '#ffffff',
+  },
+  customerHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  scanLicenceBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(0, 102, 204, 0.08)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+  },
+  scanLicenceBtnText: {
+    ...Typography.caption,
+    color: Colors.primary,
+    fontWeight: '600',
+  },
+  scannedLicenceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    marginTop: 6,
+    marginBottom: Spacing.sm,
+    gap: 8,
+  },
+  scannedLicenceTitle: {
+    ...Typography.caption,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+  },
+  scannedLicenceSub: {
+    fontSize: 10,
+    color: Colors.textSecondary,
+    marginTop: 1,
   },
 });

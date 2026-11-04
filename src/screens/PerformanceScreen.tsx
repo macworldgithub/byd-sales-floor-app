@@ -153,7 +153,7 @@ export default function PerformanceScreen() {
                   </Text>
                 </View>
               </View>
-
+              1``
               {/* Target Progress Bar */}
               <View style={styles.metricProgressWrap}>
                 <View style={styles.metricLabels}>

@@ -98,6 +98,12 @@ export default function AppHeader({
             )}
           </TouchableOpacity>
 
+          {/* Geofence Radar Presence Pill */}
+          <View style={styles.geofenceHeaderPill}>
+            <View style={styles.geofenceHeaderDot} />
+            <Text style={styles.geofenceHeaderText}>On-Site</Text>
+          </View>
+
           {/* Role Pill */}
           <View style={styles.rolePill}>
             <Text style={styles.rolePillText}>{roleLabel}</Text>
@@ -262,6 +268,28 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 9,
     fontWeight: '800',
+  },
+  geofenceHeaderPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.full,
+  },
+  geofenceHeaderDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10b981',
+  },
+  geofenceHeaderText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#15803d',
   },
   rolePill: {
     backgroundColor: Colors.dark,

@@ -49,8 +49,11 @@ export default function MoreScreen({
   const [isEditProfileOpen, setIsEditProfileOpen] = useState(false);
 
   const quickActions: QuickAction[] = [
-    { label: 'Calendar', icon: 'calendar-outline', color: '#6366f1', action: () => onNavigateTab('calendar') },
-    { label: 'Book Drive', icon: 'car-sport-outline', color: Colors.brand, action: onOpenBookDrive },
+    { label: 'Inventory', icon: 'car-outline', color: Colors.brand, action: () => onNavigateTab('inventory') },
+    { label: 'I-Appraise', icon: 'camera-outline', color: '#6366f1', action: () => onNavigateTab('appraisal') },
+    { label: 'Pulse Console', icon: 'pulse-outline', color: '#10b981', action: () => onNavigateTab('pulse') },
+    { label: 'Calendar', icon: 'calendar-outline', color: '#0ea5e9', action: () => onNavigateTab('calendar') },
+    { label: 'Book Drive', icon: 'car-sport-outline', color: '#f59e0b', action: onOpenBookDrive },
     { label: 'Add Prospect', icon: 'person-add-outline', color: '#10b981', action: onOpenAddProspect },
     { label: 'Allocation', icon: 'git-branch-outline', color: '#f59e0b', action: () => onNavigateTab('allocation') },
     { label: 'Performance', icon: 'bar-chart-outline', color: '#8b5cf6', action: () => onNavigateTab('reports') },

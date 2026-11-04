@@ -158,16 +158,68 @@ export default function DeliveriesScreen({ deliveries, onCompleteHandover }: Del
           </View>
         </View>
 
+        {/* Contractor & Geofence Status (Scope Part C) */}
+        <View style={styles.contractorSection}>
+          <View style={styles.contractorHeader}>
+            <Text style={styles.contractorTitle}>STAGED ACCESSORIES & CONTRACTORS</Text>
+            <View style={styles.geofencePill}>
+              <View style={styles.geofenceDot} />
+              <Text style={styles.geofenceText}>Contractor On-Site</Text>
+            </View>
+          </View>
+
+          <View style={styles.accessoryItem}>
+            <Ionicons name="checkmark-circle" size={14} color="#10b981" />
+            <Text style={styles.accessoryName}>All-Weather Rubber Floor Mats</Text>
+            <View style={styles.photoProofPill}>
+              <Ionicons name="camera" size={10} color="#166534" style={{ marginRight: 3 }} />
+              <Text style={styles.photoProofText}>Photo Verified</Text>
+            </View>
+          </View>
+
+          <View style={styles.accessoryItem}>
+            <Ionicons name="checkmark-circle" size={14} color="#10b981" />
+            <Text style={styles.accessoryName}>V2L Discharge Power Adapter (10A)</Text>
+            <View style={styles.photoProofPill}>
+              <Ionicons name="camera" size={10} color="#166534" style={{ marginRight: 3 }} />
+              <Text style={styles.photoProofText}>Photo Verified</Text>
+            </View>
+          </View>
+
+          {!isReady && (
+            <View style={styles.accessoryPendingItem}>
+              <Ionicons name="time" size={14} color="#f59e0b" />
+              <Text style={styles.accessoryPendingName}>Ceramic Paint Coating (ProDetailing)</Text>
+              <View style={styles.pendingProofPill}>
+                <Text style={styles.pendingProofText}>Awaiting Photo Proof</Text>
+              </View>
+            </View>
+          )}
+        </View>
+
         {/* Actions */}
-        {isReady && (
+        {isReady ? (
           <TouchableOpacity
             style={styles.handoverBtn}
-            onPress={() => handleHandover(delivery)}
+            onPress={() => {
+              Alert.alert(
+                'Handover Complete',
+                `Handover for ${delivery.name} completed successfully.\n\nAutomated BYD 21-Day Welcome & Satisfaction Journey has been triggered.`,
+                [{ text: 'OK', onPress: () => handleHandover(delivery) }]
+              );
+            }}
             activeOpacity={0.85}
           >
             <Ionicons name="checkmark-circle-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={styles.handoverBtnText}>Complete Handover</Text>
+            <Text style={styles.handoverBtnText}>Complete Handover & Start 21-Day Journey</Text>
           </TouchableOpacity>
+        ) : (
+          <View style={styles.handoverBlockedBox}>
+            <Ionicons name="alert-circle" size={14} color="#b45309" style={{ marginRight: 6 }} />
+            <Text style={styles.handoverBlockedText}>
+              Handover Blocked: PDI and contractor ceramic photo proof must be uploaded before handover.
+            </Text>
+          </View>
         )}
       </View>
     );
@@ -419,6 +471,118 @@ const styles = StyleSheet.create({
     shadowColor: '#10b981',
   },
   handoverBtnText: { color: '#fff', fontSize: Typography.sm, fontWeight: Typography.bold },
+
+  contractorSection: {
+    marginTop: Spacing.sm + 2,
+    paddingTop: Spacing.sm + 2,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  contractorHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  contractorTitle: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.textMuted,
+    letterSpacing: 0.8,
+  },
+  geofencePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  geofenceDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: '#10b981',
+    marginRight: 4,
+  },
+  geofenceText: {
+    fontSize: 9,
+    color: '#166534',
+    fontWeight: '700',
+  },
+  accessoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  accessoryName: {
+    fontSize: Typography.xs - 1,
+    color: Colors.textPrimary,
+    fontWeight: '500',
+    marginLeft: 6,
+    flex: 1,
+  },
+  photoProofPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#dcfce7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  photoProofText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#166534',
+  },
+  accessoryPendingItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fffbeb',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  accessoryPendingName: {
+    fontSize: Typography.xs - 1,
+    color: '#92400e',
+    fontWeight: '500',
+    marginLeft: 6,
+    flex: 1,
+  },
+  pendingProofPill: {
+    backgroundColor: '#fef3c7',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  pendingProofText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#b45309',
+  },
+  handoverBlockedBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+    borderRadius: BorderRadius.md,
+    padding: Spacing.sm,
+    marginTop: Spacing.md,
+  },
+  handoverBlockedText: {
+    fontSize: Typography.xs - 1,
+    color: '#92400e',
+    fontWeight: '600',
+    flex: 1,
+    lineHeight: 15,
+  },
 
   emptyState: { alignItems: 'center', paddingVertical: Spacing.xxxl },
   emptyIconCircle: {

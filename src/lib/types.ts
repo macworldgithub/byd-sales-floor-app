@@ -25,6 +25,20 @@ export interface Lead {
   dealerName?: string;
   tag?: string;
   tags?: string[];
+  businessName?: string;
+  abn?: string;
+  companyContacts?: {
+    name: string;
+    role?: string;
+    phone?: string;
+    email?: string;
+  }[];
+  tradeInRego?: string;
+  tradeInVin?: string;
+  tradeInModel?: string;
+  ppsrStatus?: 'Clear' | 'Encumbered' | 'Error' | 'Pending';
+  dealRecord?: DealRecord;
+  appraisalRecord?: IAppraiseRecord;
   testDrive?: {
     testDriveDate?: string | null;
     location?: string;
@@ -146,3 +160,94 @@ export interface ConsultantCapacity {
 }
 
 export type UserRole = 'consultant' | 'manager' | 'principal' | 'super_admin';
+
+export interface InventoryVehicle {
+  id: string;
+  stockNumber: string;
+  vin: string;
+  rego?: string;
+  make: string;
+  model: string;
+  variant: string;
+  year: number;
+  colour: string;
+  daysInStock: number;
+  ageingBucket: '0-30' | '31-60' | '90+';
+  status: 'In Stock' | 'Deal Pending' | 'In Transit' | 'Sold';
+  advertisedPrice: number;
+  costPrice: number;
+  specs?: {
+    battery?: string;
+    range?: string;
+    drivetrain?: string;
+    power?: string;
+  };
+  site: string;
+  isGroupStock?: boolean;
+}
+
+export interface IAppraiseRecord {
+  id: string;
+  leadId?: string;
+  customerName: string;
+  rego: string;
+  vin: string;
+  make: string;
+  model: string;
+  year: number;
+  odometer: number;
+  transmission: string;
+  ppsrStatus: 'Clear' | 'Encumbered' | 'Error' | 'Pending';
+  ppsrDetails?: {
+    encumbranceType?: string;
+    financier?: string;
+    certificateNumber?: string;
+  };
+  photos: {
+    angle: string;
+    label: string;
+    captured: boolean;
+    uri?: string;
+  }[];
+  damages: {
+    id: string;
+    location: string;
+    type: string;
+    severity: 'Minor' | 'Moderate' | 'Severe';
+    notes?: string;
+  }[];
+  appraisedValue: number;
+  status: 'Draft' | 'Completed' | 'Sent to DMS';
+  loanCarSigned?: boolean;
+  loanCarRego?: string;
+  createdAt: string;
+}
+
+export interface DealRecord {
+  id: string;
+  leadId: string;
+  customerName: string;
+  vehicleName: string;
+  vin: string;
+  rego?: string;
+  salePrice: number;
+  tradeInValue?: number;
+  tradeInPpsr?: 'Clear' | 'Encumbered' | 'Error';
+  financeType: 'Cash' | 'Financed' | 'Novated Lease';
+  status: 'Pending Approval' | 'Pushed to Virtual Yard' | 'Pushed to eraPower' | 'eraPower Synced' | 'Contract Signed' | 'Delivery Scheduled';
+  consultant: string;
+  createdAt: string;
+}
+
+export interface PulseMetrics {
+  activeLeads: number;
+  unactionedLeads: number;
+  appointmentsBooked: number;
+  overdueSla: number;
+  dealsCompleted: number;
+  conversionRate: number;
+  videosSent: number;
+  monthlyTarget: number;
+  trafficLight: 'green' | 'amber' | 'red';
+}
+

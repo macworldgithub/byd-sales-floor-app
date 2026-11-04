@@ -42,11 +42,13 @@ export default function LoginScreen({ onLoginSuccess }: LoginScreenProps) {
   };
 
   const handleDemoLogin = async () => {
+    setError('');
     setIsLoading(true);
     try {
-      await login('alex.rivers@byd.com', 'demo1234');
+      await login('tracey.arnott@bydnunawading.com.au', '123456');
       onLoginSuccess();
-    } catch {
+    } catch (err: any) {
+      setError(err.message || 'Demo login failed');
       setIsLoading(false);
     }
   };

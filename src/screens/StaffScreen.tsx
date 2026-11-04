@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, BorderRadius, Shadows } from '../lib/theme';
 import { staffApi, StaffMember } from '../lib/api';
+import { DEALERSHIP_SITES, isLocationInsideGeofence } from "../lib/DealershipSite";
 
 const DEFAULT_STAFF: StaffMember[] = [
   {
@@ -82,6 +83,16 @@ export default function StaffScreen() {
   const [staff, setStaff] = useState<StaffMember[]>(DEFAULT_STAFF);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRole, setSelectedRole] = useState<'All' | 'Consultants' | 'Managers'>('All');
+  const [myGeofenceState, setMyGeofenceState] = useState<'on_site' | 'test_drive'>('on_site');
+  const [presenceData, setPresenceData] = useState<any[]>([]);
+
+  const loadPresence = () => {
+    staffApi.getPresence().then((res) => {
+      if (res && res.data) {
+        setPresenceData(res.data);
+      }
+    }).catch(() => null);
+  };
 
   useEffect(() => {
     staffApi.getStaff('BYD Melbourne CBD')
@@ -93,7 +104,26 @@ export default function StaffScreen() {
       .catch(() => {
         // Fallback to default staff
       });
+
+    loadPresence();
   }, []);
+
+  const handleToggleMyGeofence = async () => {
+    const nextState = myGeofenceState === 'on_site' ? 'test_drive' : 'on_site';
+    setMyGeofenceState(nextState);
+
+    const isInside = nextState === 'on_site';
+    const site = DEALERSHIP_SITES['BYD Nunawading'];
+    await staffApi.updateGeofence({
+      isInsideGeofence: isInside,
+      site: site.name,
+      latitude: isInside ? site.latitude : site.latitude + 0.02,
+      longitude: isInside ? site.longitude : site.longitude + 0.02,
+      activity: isInside ? 'Showroom Floor Duty' : 'Off-site Test Drive Loop B',
+    });
+
+    loadPresence();
+  };
 
   const filteredStaff = staff.filter((m) => {
     const q = searchQuery.toLowerCase().trim();
@@ -117,7 +147,7 @@ export default function StaffScreen() {
 
   const handleEmail = (email?: string) => {
     if (!email) return;
-    Linking.openURL(`mailto:${email}`).catch(() => {});
+    Linking.openURL(`mailto:${email}`).catch(() => { });
   };
 
   return (
@@ -150,6 +180,41 @@ export default function StaffScreen() {
               <Ionicons name="close-circle" size={16} color={Colors.textMuted} />
             </TouchableOpacity>
           )}
+        </View>
+      </View>
+
+      {/* Geofence Presence Radar Strip */}
+      <View style={styles.geofenceRadarCard}>
+        <View style={styles.geofenceHeader}>
+          <View style={styles.geofenceLiveIndicator}>
+            <View style={styles.pulsingRadarDot} />
+            <Text style={styles.geofenceRadarTitle}>GPS SHOWROOM GEOFENCE ACTIVE</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.geofenceSimulateBtn}
+            onPress={handleToggleMyGeofence}
+          >
+            <Ionicons
+              name={myGeofenceState === 'on_site' ? 'car-outline' : 'business-outline'}
+              size={12}
+              color={Colors.brand}
+            />
+            <Text style={styles.geofenceSimulateBtnText}>
+              {myGeofenceState === 'on_site' ? 'Depart on Test Drive' : 'Return to Showroom'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.geofenceStatusStats}>
+          <View style={styles.geofenceStatItem}>
+            <Ionicons name="shield-checkmark" size={13} color="#15803d" />
+            <Text style={styles.geofenceStatText}>On-Site Floor: 4 staff</Text>
+          </View>
+          <View style={styles.geofenceStatDivider} />
+          <View style={styles.geofenceStatItem}>
+            <Ionicons name="speedometer-outline" size={13} color="#d97706" />
+            <Text style={styles.geofenceStatText}>Test Drive Loops: 2 staff</Text>
+          </View>
         </View>
       </View>
 
@@ -198,6 +263,32 @@ export default function StaffScreen() {
                   <View style={styles.siteRow}>
                     <Ionicons name="business-outline" size={11} color={Colors.textMuted} />
                     <Text style={styles.site}>{member.site || 'Melbourne CBD'}</Text>
+                  </View>
+
+                  {/* Geofence Status Pill */}
+                  <View
+                    style={[
+                      styles.presenceBadge,
+                      idx % 3 === 1
+                        ? styles.presenceBadgeDriving
+                        : styles.presenceBadgeOnSite,
+                    ]}
+                  >
+                    <Ionicons
+                      name={idx % 3 === 1 ? 'navigate-circle' : 'radio'}
+                      size={11}
+                      color={idx % 3 === 1 ? '#d97706' : '#15803d'}
+                    />
+                    <Text
+                      style={[
+                        styles.presenceBadgeText,
+                        { color: idx % 3 === 1 ? '#b45309' : '#166534' },
+                      ]}
+                    >
+                      {idx % 3 === 1
+                        ? 'Off-Site · Demo Loop B (Highway)'
+                        : 'On-Site · Showroom Floor (Nunawading)'}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -411,5 +502,103 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
     color: Colors.brand,
+  },
+
+  // Geofence Radar styles
+  geofenceRadarCard: {
+    marginHorizontal: Spacing.base,
+    marginBottom: Spacing.sm,
+    backgroundColor: '#ffffff',
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 10,
+    ...Shadows.sm,
+  },
+  geofenceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  geofenceLiveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  pulsingRadarDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10b981',
+  },
+  geofenceRadarTitle: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#0f172a',
+    letterSpacing: 0.8,
+  },
+  geofenceSimulateBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(230,0,18,0.08)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: BorderRadius.full,
+  },
+  geofenceSimulateBtnText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.brand,
+  },
+  geofenceStatusStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8fafc',
+    borderRadius: BorderRadius.sm,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+  },
+  geofenceStatItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+  },
+  geofenceStatDivider: {
+    width: 1,
+    height: 14,
+    backgroundColor: Colors.border,
+    marginHorizontal: 6,
+  },
+  geofenceStatText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textSecondary,
+  },
+  presenceBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: BorderRadius.sm,
+    marginTop: 6,
+    alignSelf: 'flex-start',
+  },
+  presenceBadgeOnSite: {
+    backgroundColor: '#f0fdf4',
+    borderWidth: 1,
+    borderColor: '#bbf7d0',
+  },
+  presenceBadgeDriving: {
+    backgroundColor: '#fffbeb',
+    borderWidth: 1,
+    borderColor: '#fde68a',
+  },
+  presenceBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
   },
 });

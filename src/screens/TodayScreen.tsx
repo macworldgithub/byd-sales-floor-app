@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -71,6 +71,43 @@ export default function TodayScreen({
   const todayCount = timelineEvents.length || 6;
   const conversationCount = leads.length + 8;
   const deliveriesCount = deliveries.length || 5;
+
+  const [summaryPeriod, setSummaryPeriod] = useState<'today' | 'weekly' | 'mtd'>('today');
+  const unactionedCount = leads.filter(l => l.stage === 'Imported').length || 2;
+  const overdueSlaCount = leads.filter(l => l.priority).length || 1;
+
+  const summaryMetrics = {
+    today: {
+      activeLeads: leads.length,
+      unactionedLeads: unactionedCount,
+      apptsBooked: timelineEvents.length || 4,
+      overdueSla: overdueSlaCount,
+      dealsCompleted: 2,
+      conversionRate: '28.5%',
+      videosSent: 6,
+      monthlyTarget: '14 / 16',
+    },
+    weekly: {
+      activeLeads: leads.length + 8,
+      unactionedLeads: unactionedCount + 2,
+      apptsBooked: 18,
+      overdueSla: overdueSlaCount + 1,
+      dealsCompleted: 8,
+      conversionRate: '29.2%',
+      videosSent: 24,
+      monthlyTarget: '14 / 16',
+    },
+    mtd: {
+      activeLeads: 51,
+      unactionedLeads: 4,
+      apptsBooked: 64,
+      overdueSla: 3,
+      dealsCompleted: 14,
+      conversionRate: '31.0%',
+      videosSent: 78,
+      monthlyTarget: '14 / 16',
+    },
+  }[summaryPeriod];
 
   const nextEvent = timelineEvents[0];
   const nextLead = leads.find((l) => nextEvent && nextEvent.title.includes(l.name)) || leads[0];
@@ -160,43 +197,125 @@ export default function TodayScreen({
         )}
       </View>
 
-      {/* Metric Cards Row */}
-      <View style={styles.metricsSection}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.metricsScroll}
-          contentContainerStyle={styles.metricsContent}
+      {/* Sales Staff Summary Card (Scope Part B §4) */}
+      <View style={styles.summaryCard}>
+        <View style={styles.summaryCardHeader}>
+          <View>
+            <Text style={styles.summaryCardEyebrow}>OPERATIONAL VELOCITY</Text>
+            <Text style={styles.summaryCardTitle}>Staff Summary Card</Text>
+          </View>
+          <View style={styles.periodToggleWrap}>
+            {(['today', 'weekly', 'mtd'] as const).map(p => (
+              <TouchableOpacity
+                key={p}
+                style={[styles.periodToggleBtn, summaryPeriod === p && styles.periodToggleBtnActive]}
+                onPress={() => setSummaryPeriod(p)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.periodToggleText, summaryPeriod === p && styles.periodToggleTextActive]}>
+                  {p === 'mtd' ? 'MTD' : p.toUpperCase()}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* 8 Required Metrics Grid */}
+        <View style={styles.metricsGrid}>
+          <View style={styles.metricItem}>
+            <View style={styles.metricItemIcon}>
+              <Ionicons name="people-outline" size={14} color="#6366f1" />
+            </View>
+            <Text style={styles.metricItemValue}>{summaryMetrics.activeLeads}</Text>
+            <Text style={styles.metricItemLabel}>Active Leads</Text>
+          </View>
+
+          <View style={styles.metricItem}>
+            <View style={[styles.metricItemIcon, { backgroundColor: '#fffbeb' }]}>
+              <Ionicons name="alert-circle-outline" size={14} color="#f59e0b" />
+            </View>
+            <Text style={[styles.metricItemValue, { color: '#b45309' }]}>{summaryMetrics.unactionedLeads}</Text>
+            <Text style={styles.metricItemLabel}>Unactioned</Text>
+          </View>
+
+          <View style={styles.metricItem}>
+            <View style={[styles.metricItemIcon, { backgroundColor: '#f0fdf4' }]}>
+              <Ionicons name="calendar-outline" size={14} color="#10b981" />
+            </View>
+            <Text style={styles.metricItemValue}>{summaryMetrics.apptsBooked}</Text>
+            <Text style={styles.metricItemLabel}>Appts/Drives</Text>
+          </View>
+
+          <View style={styles.metricItem}>
+            <View style={[styles.metricItemIcon, { backgroundColor: '#fef2f2' }]}>
+              <Ionicons name="timer-outline" size={14} color="#ef4444" />
+            </View>
+            <Text style={[styles.metricItemValue, { color: '#dc2626' }]}>{summaryMetrics.overdueSla}</Text>
+            <Text style={styles.metricItemLabel}>Overdue SLA</Text>
+          </View>
+
+          <View style={styles.metricItem}>
+            <View style={[styles.metricItemIcon, { backgroundColor: '#f0f9ff' }]}>
+              <Ionicons name="car-sport-outline" size={14} color={Colors.brand} />
+            </View>
+            <Text style={styles.metricItemValue}>{summaryMetrics.dealsCompleted}</Text>
+            <Text style={styles.metricItemLabel}>Deals Done</Text>
+          </View>
+
+          <View style={styles.metricItem}>
+            <View style={[styles.metricItemIcon, { backgroundColor: '#f5f3ff' }]}>
+              <Ionicons name="trending-up-outline" size={14} color="#8b5cf6" />
+            </View>
+            <Text style={styles.metricItemValue}>{summaryMetrics.conversionRate}</Text>
+            <Text style={styles.metricItemLabel}>Conversion %</Text>
+          </View>
+
+          <View style={styles.metricItem}>
+            <View style={[styles.metricItemIcon, { backgroundColor: '#fdf4ff' }]}>
+              <Ionicons name="videocam-outline" size={14} color="#d946ef" />
+            </View>
+            <Text style={styles.metricItemValue}>{summaryMetrics.videosSent}</Text>
+            <Text style={styles.metricItemLabel}>Videos Sent</Text>
+          </View>
+
+          <View style={styles.metricItem}>
+            <View style={[styles.metricItemIcon, { backgroundColor: '#f8fafc' }]}>
+              <Ionicons name="ribbon-outline" size={14} color="#475569" />
+            </View>
+            <Text style={styles.metricItemValue}>{summaryMetrics.monthlyTarget}</Text>
+            <Text style={styles.metricItemLabel}>Target Pace</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* Quick Suite Navigation */}
+      <View style={styles.quickLaunchRow}>
+        <TouchableOpacity
+          style={styles.quickLaunchBtn}
+          onPress={() => onNavigateTab('inventory')}
+          activeOpacity={0.8}
         >
-          <MetricCard
-            label="Needs Me"
-            value={String(needsMeCount)}
-            change="Approaching 15m SLA"
-            iconName="alert-circle"
-            tone="red"
-          />
-          <MetricCard
-            label="Appointments"
-            value={String(todayCount)}
-            change="Drives & handovers"
-            iconName="calendar"
-            tone="cyan"
-          />
-          <MetricCard
-            label="Conversations"
-            value={String(conversationCount)}
-            change="Active threads"
-            iconName="chatbubbles"
-            tone="neutral"
-          />
-          <MetricCard
-            label="Deliveries"
-            value={String(deliveriesCount)}
-            change="Staged this week"
-            iconName="car-sport"
-            tone="green"
-          />
-        </ScrollView>
+          <Ionicons name="car-outline" size={16} color={Colors.brand} style={{ marginRight: 6 }} />
+          <Text style={styles.quickLaunchText}>Floor Stock</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.quickLaunchBtn}
+          onPress={() => onNavigateTab('appraisal')}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="camera-outline" size={16} color="#6366f1" style={{ marginRight: 6 }} />
+          <Text style={styles.quickLaunchText}>I-Appraise</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.quickLaunchBtn}
+          onPress={() => onNavigateTab('pulse')}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="pulse" size={16} color="#10b981" style={{ marginRight: 6 }} />
+          <Text style={styles.quickLaunchText}>Pulse Console</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Priority Queue */}
@@ -584,13 +703,119 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // Metrics
-  metricsSection: {
+  // Summary Card (Scope Part B §4)
+  summaryCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: BorderRadius.lg,
+    padding: Spacing.base,
+    marginHorizontal: Spacing.base,
     marginTop: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadows.sm,
   },
-  metricsScroll: {},
-  metricsContent: {
-    paddingHorizontal: Spacing.base,
+  summaryCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  summaryCardEyebrow: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: Colors.textMuted,
+    letterSpacing: 1,
+  },
+  summaryCardTitle: {
+    fontSize: Typography.titleSmall.fontSize,
+    fontWeight: '700',
+    color: Colors.textPrimary,
+    marginTop: 1,
+  },
+  periodToggleWrap: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f5f9',
+    borderRadius: BorderRadius.md,
+    padding: 2,
+  },
+  periodToggleBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.sm,
+  },
+  periodToggleBtnActive: {
+    backgroundColor: Colors.brand,
+  },
+  periodToggleText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: Colors.textSecondary,
+  },
+  periodToggleTextActive: {
+    color: '#ffffff',
+  },
+  metricsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 6,
+    gap: 8,
+  },
+  metricItem: {
+    width: '23%',
+    flex: 1,
+    minWidth: 72,
+    backgroundColor: '#f8fafc',
+    borderRadius: BorderRadius.md,
+    padding: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  metricItemIcon: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: '#eff6ff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 4,
+  },
+  metricItemValue: {
+    fontSize: Typography.sm,
+    fontWeight: '800',
+    color: Colors.textPrimary,
+  },
+  metricItemLabel: {
+    fontSize: 9,
+    color: Colors.textMuted,
+    fontWeight: '600',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+
+  // Quick Launch Row
+  quickLaunchRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginHorizontal: Spacing.base,
+    marginTop: Spacing.sm,
+  },
+  quickLaunchBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: BorderRadius.md,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    ...Shadows.sm,
+  },
+  quickLaunchText: {
+    fontSize: Typography.xs,
+    fontWeight: '700',
+    color: Colors.textPrimary,
   },
 
   // Standard Card Section

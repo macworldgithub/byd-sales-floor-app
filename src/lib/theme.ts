@@ -49,6 +49,9 @@ export const Colors = {
   eventHold: '#64748b',
 
   // Semantic & Accents
+  primary: '#0284c7',
+  background: '#090d16',
+  textTertiary: '#64748b',
   success: '#10b981',
   successSoft: '#ecfdf5',
   successText: '#065f46',
@@ -92,6 +95,7 @@ export const Typography = {
   bodyLarge: { fontSize: 15, lineHeight: 22, fontWeight: '400' as const },
   bodyMedium: { fontSize: 13, lineHeight: 18, fontWeight: '400' as const },
   bodySmall: { fontSize: 11, lineHeight: 15, fontWeight: '400' as const },
+  caption: { fontSize: 11, lineHeight: 15, fontWeight: '400' as const },
   labelLarge: { fontSize: 13, lineHeight: 17, fontWeight: '600' as const },
   labelMedium: { fontSize: 11, lineHeight: 15, fontWeight: '600' as const },
   labelSmall: { fontSize: 10, lineHeight: 13, fontWeight: '700' as const },
