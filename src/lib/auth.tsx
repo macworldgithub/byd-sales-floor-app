@@ -1,13 +1,16 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authApi, getToken, clearToken } from './api';
+import { authApi, getToken, clearToken, onSessionExpired, setApiSite } from './api';
 
 export interface AuthUser {
+  id?: string;
   email: string;
   name: string;
   role: string;
   location?: string;
   phone?: string;
   token?: string;
+  allowedSites?: string[];
+  allSites?: boolean;
 }
 
 interface AuthContextType {
@@ -24,6 +27,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => { onSessionExpired(() => setUser(null)); return () => onSessionExpired(); }, []);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -35,12 +39,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (res?.success && res?.data) {
             const u = res.data;
             setUser({
+              id: u.id || u._id,
               email: u.email,
               name: u.name || 'Sales Consultant',
               role: u.role || 'sales_consultant',
               location: u.site || u.active_site || 'BYD Dealership',
               phone: u.phone || u.contractor_phone || '',
               token,
+              allowedSites: u.allowed_sites,
+              allSites: u.all_sites,
             });
           } else {
             // Token rejected by backend
@@ -66,18 +73,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const res = await authApi.login(email, password);
     const u = res.user;
     const userData: AuthUser = {
+      id: u?.id || u?._id,
       email: u?.email || email,
       name: u?.name || 'Sales Consultant',
       role: u?.role || 'sales_consultant',
       location: u?.site || u?.active_site || 'BYD Dealership',
       phone: u?.phone || u?.contractor_phone || '',
       token: res.token,
+      allowedSites: u?.allowed_sites,
+      allSites: u?.all_sites,
     };
     setUser(userData);
   };
 
   const logout = async () => {
-    await clearToken();
+    await authApi.logout();
+    setApiSite('');
     setUser(null);
   };
 

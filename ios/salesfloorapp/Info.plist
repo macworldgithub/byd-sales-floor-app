@@ -19,7 +19,7 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.0.0</string>
+	<string>1.1.0</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleURLTypes</key>
@@ -27,6 +27,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
+				<string>salesfloor</string>
 				<string>com.salesfloor.app</string>
 			</array>
 		</dict>
@@ -44,6 +45,27 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Capture customer media and delivery proof.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Allow $(PRODUCT_NAME) to access your location</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Allow $(PRODUCT_NAME) to access your location</string>
+	<key>NSLocationTemporaryUsageDescriptionDictionary</key>
+	<dict>
+		<key>ExpoLocationFullAccuracy</key>
+		<string>Allow $(PRODUCT_NAME) to access your precise location</string>
+	</dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Report staff presence and verify on-site delivery completion.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Allow $(PRODUCT_NAME) to detect your current motion activity</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Attach photos and videos to customer conversations.</string>
+	<key>NSUserActivityTypes</key>
+	<array>
+		<string>$(PRODUCT_BUNDLE_IDENTIFIER).expo.index_route</string>
+	</array>
 	<key>RCTMetroPort</key>
 	<string>$(RCT_METRO_PORT)</string>
 	<key>RCTNewArchEnabled</key>

@@ -2,16 +2,23 @@
   "expo": {
     "name": "sales-floor-app",
     "slug": "sales-floor-app",
-    "version": "1.0.0",
+    "version": "1.1.0",
+    "scheme": "salesfloor",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.salesfloor.app"
+      "bundleIdentifier": "com.salesfloor.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Capture customer media and delivery completion photos.",
+        "NSPhotoLibraryUsageDescription": "Attach photos and videos to customer conversations.",
+        "NSLocationWhenInUseUsageDescription": "Report staff presence and verify contractor completion on-site."
+      }
     },
     "android": {
       "package": "com.salesfloor.app",
+      "permissions": ["CAMERA", "ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "POST_NOTIFICATIONS"],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -22,6 +29,13 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-sharing",
+      "expo-router",
+      ["expo-image-picker", { "photosPermission": "Attach photos and videos to customer conversations.", "cameraPermission": "Capture customer media and delivery proof.", "microphonePermission": false }],
+      ["expo-location", { "locationWhenInUsePermission": "Report staff presence and verify on-site delivery completion." }],
+      "expo-notifications"
+    ]
   }
 }

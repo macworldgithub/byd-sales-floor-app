@@ -9,6 +9,10 @@ import * as SecureStore from 'expo-secure-store';
 
 export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4003/api';
 const TOKEN_KEY = 'byd_auth_token';
+let activeSite = '';
+let expiredHandler: (() => void) | undefined;
+export const setApiSite = (site: string) => { activeSite = site; };
+export const onSessionExpired = (handler?: () => void) => { expiredHandler = handler; };
 
 // ─── Token Helpers ────────────────────────────────────────────────────────────
 
@@ -37,6 +41,7 @@ export async function fetchApi<T>(
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
+  if (activeSite) headers['X-Site'] = activeSite;
 
   const response = await fetch(`${BASE_URL}${endpoint}`, {
     ...options,
@@ -45,12 +50,13 @@ export async function fetchApi<T>(
 
   if (response.status === 401) {
     await clearToken();
+    expiredHandler?.();
     throw new Error('Session expired. Please log in again.');
   }
 
   const json = await response.json();
-  if (!response.ok) {
-    throw new Error(json.message || json.error || `API Error: ${response.status}`);
+  if (!response.ok || json.success === false) {
+    throw new Error(json.message || json.error || json.errors?.[0]?.msg || `API Error: ${response.status}`);
   }
   return json;
 }
@@ -93,10 +99,9 @@ export const authApi = {
 
     const user = data?.data?.user;
 
-    // Requirement 2: Log token in terminal after successful login (safe: never log passwords)
+    // Record the sign-in outcome without logging the access token.
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
     console.log(`[AUTH SUCCESS] HTTP ${status} OK`);
-    console.log(`[AUTH SUCCESS] Access Token: ${token}`);
     console.log(`[AUTH SUCCESS] User: ${user?.name || email} (${user?.role || 'consultant'}) - Site: ${user?.site || user?.active_site || 'BYD'}`);
     console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
 
