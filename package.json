@@ -47,6 +47,7 @@
   },
   "scripts": {
     "lint": "expo lint",
+    "postinstall": "node scripts/patch-expo-modules-core.cjs",
     "typecheck": "tsc --noEmit",
     "test": "node --test tests/*.test.cjs",
     "start": "expo start",
