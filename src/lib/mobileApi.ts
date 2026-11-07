@@ -11,8 +11,8 @@ export async function request<T = Row>(path: string, body?: unknown, method = 'P
 }
 export const mobileApi = {
   bootstrap: () => request('/mobile/bootstrap'),
-  leads: async (page = 1, query = '') => {
-    const result = await fetchApi<Row[]>(`/mobile/leads${qs({ page, limit: 100, q: query })}`);
+  leads: async (page = 1, query = '', limit = 10) => {
+    const result = await fetchApi<Row[]>(`/mobile/leads${qs({ page, limit, q: query })}`);
     return { rows: result.data || [], pagination: result.pagination };
   },
   createLead: (data: Row) => request('/mobile/leads', data),

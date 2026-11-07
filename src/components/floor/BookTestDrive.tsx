@@ -86,7 +86,7 @@ export function BookTestDrive({ lead: initialLead, onClose }: { lead?: Row; onCl
       <Field label="Time in Melbourne (HH:MM)" value={time} onChange={setTime} />
       <Pick label="Duration" value={duration} rows={['30', '45', '60'].map(value => ({ id: value, name: `${value} minutes` }))} onChange={setDuration} />
       <Field label="Notes" value={notes} onChange={setNotes} multiline />
-      <Button title="Capture driver licence" secondary disabled={!leadId || busy} busy={licenceBusy} onPress={() => {
+      <Button title="Capture driver licence (optional)" secondary disabled={!leadId || busy} busy={licenceBusy} onPress={() => {
         setLicenceBusy(true); setError('');
         chooseMedia(true, true).then(async asset => { if (!asset) return; const result = await uploadLicence(asset, floor.site, leadId); setLicence(result); setLicenceId(''); const fields = result.suggestions || {}; setLicenceName(fields.fullName || lead?.name || ''); setLicenceNumber(fields.licenceNumber || ''); setLicenceState(fields.state || 'VIC'); setLicenceExpiry(fields.expiryDate || ''); }).catch(cause => setError(cause.message)).finally(() => setLicenceBusy(false));
       }} />
@@ -95,8 +95,9 @@ export function BookTestDrive({ lead: initialLead, onClose }: { lead?: Row; onCl
         <Pick label="Issuing state" value={licenceState} rows={['VIC', 'NSW', 'QLD', 'SA', 'WA', 'TAS', 'ACT', 'NT'].map(id => ({ id, name: id }))} onChange={text => { setLicenceState(text); setLicenceId(''); }} />
         <Field label="Licence expiry (YYYY-MM-DD)" value={licenceExpiry} onChange={text => { setLicenceExpiry(text); setLicenceId(''); }} />
         <Button title={licenceId ? 'Licence verified and attached' : 'Confirm licence details'} secondary disabled={Boolean(licenceId)} busy={licenceBusy} onPress={() => { setLicenceBusy(true); mobileApi.reviewLicence(leadId, { imageId: licence.id, fullName: licenceName, licenceNumber, state: licenceState, expiryDate: licenceExpiry }).then(result => setLicenceId(result.id)).catch(cause => setError(cause.message)).finally(() => setLicenceBusy(false)); }} />
+        {!licenceId && <Button title="Skip — book without licence" secondary disabled={licenceBusy} onPress={() => { setLicence(null); setLicenceId(''); setLicenceName(''); setLicenceNumber(''); setLicenceState('VIC'); setLicenceExpiry(''); }} />}
       </View>}
-      <Button title="Confirm booking" busy={busy} disabled={licenceBusy || Boolean(licence && !licenceId) || meta.loading || !meta.data.yards?.length || vehicles.loading || users.loading || drivers.loading || !lead || !yardId || !vehicleId || !userId || (!driverId && !createDriver) || !date || !time} onPress={() => { void submit(); }} />
+      <Button title="Confirm booking" busy={busy} disabled={licenceBusy || (Boolean(licence) && !licenceId) || meta.loading || !meta.data.yards?.length || vehicles.loading || users.loading || drivers.loading || !lead || !yardId || !vehicleId || !userId || (!driverId && !createDriver) || !date || !time} onPress={() => { void submit(); }} />
     </View>}
   </Sheet>;
 }

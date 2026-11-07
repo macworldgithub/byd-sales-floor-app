@@ -24,6 +24,14 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const resolveInitialSite = (u: any): string => {
+  const raw = u?.site || u?.active_site;
+  if (raw && raw !== 'BYD Dealership') return raw;
+  if (Array.isArray(u?.allowed_sites) && u.allowed_sites.length > 0) return u.allowed_sites[0];
+  if (u?.all_sites || ['super_admin', 'admin', 'manager', 'sales_manager'].includes(u?.role)) return 'All Sites';
+  return 'BYD Melbourne City';
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               email: u.email,
               name: u.name || 'Sales Consultant',
               role: u.role || 'sales_consultant',
-              location: u.site || u.active_site || 'BYD Dealership',
+              location: resolveInitialSite(u),
               phone: u.phone || u.contractor_phone || '',
               token,
               allowedSites: u.allowed_sites,
@@ -77,7 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: u?.email || email,
       name: u?.name || 'Sales Consultant',
       role: u?.role || 'sales_consultant',
-      location: u?.site || u?.active_site || 'BYD Dealership',
+      location: resolveInitialSite(u),
       phone: u?.phone || u?.contractor_phone || '',
       token: res.token,
       allowedSites: u?.allowed_sites,

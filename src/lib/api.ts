@@ -6,8 +6,31 @@
 
 import { Lead, Delivery, Appointment, ConversationThread } from './types';
 import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
 
-export const BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:4003/api';
+// ─── Base URL Resolution ──────────────────────────────────────────────────────
+const resolveBaseUrl = (): string => {
+  let url = (process.env.EXPO_PUBLIC_API_URL || '').trim();
+  if (!url) {
+    url = 'https://sales-floor-backend.goodshowroom.com/api';
+  }
+  // Strip trailing slashes
+  url = url.replace(/\/+$/, '');
+
+  // 10.0.2.2 is Android-only loopback; on iOS it stalls until URLSession times out
+  if (Platform.OS === 'ios' && url.includes('10.0.2.2')) {
+    console.warn(
+      `\n⚠️  [API CONFIG NOTICE] Detected Android emulator host IP (10.0.2.2) while running on iOS.\n` +
+      `   Auto-redirecting BASE_URL to deployed backend: https://sales-floor-backend.goodshowroom.com/api\n`
+    );
+    url = 'https://sales-floor-backend.goodshowroom.com/api';
+  }
+  return url;
+};
+
+export const BASE_URL = resolveBaseUrl();
+console.log(`🌐 [API CLIENT INITIALIZED] Base URL -> ${BASE_URL} (Platform: ${Platform.OS})`);
+
 const TOKEN_KEY = 'byd_auth_token';
 let activeSite = '';
 let expiredHandler: (() => void) | undefined;
@@ -28,6 +51,131 @@ export const clearToken = async () => {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
 };
 
+// ─── Detailed Terminal Logger & Network Executor ──────────────────────────────
+
+interface RequestLogOptions extends RequestInit {
+  timeoutMs?: number;
+}
+
+function sanitizePayload(body: any): any {
+  if (!body) return undefined;
+  if (typeof body === 'string') {
+    try {
+      const parsed = JSON.parse(body);
+      return sanitizePayload(parsed);
+    } catch {
+      return body;
+    }
+  }
+  if (typeof body === 'object' && body !== null) {
+    const cloned = Array.isArray(body) ? [...body] : { ...body };
+    for (const key of Object.keys(cloned)) {
+      if (/password|token|secret/i.test(key)) {
+        cloned[key] = '••••••••';
+      }
+    }
+    return cloned;
+  }
+  return body;
+}
+
+export async function requestWithLogging(
+  fullUrl: string,
+  options: RequestLogOptions = {}
+): Promise<{ status: number; ok: boolean; data: any }> {
+  const method = (options.method || 'GET').toUpperCase();
+  const startTime = Date.now();
+  const timeoutMs = options.timeoutMs || 25000;
+
+  // 1. Log Request Details to Terminal
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log(`📡 [API REQUEST]`);
+  console.log(`   Endpoint: ${fullUrl}`);
+  console.log(`   Method:   ${method}`);
+  if (options.headers) {
+    const sanitizedHeaders = { ...(options.headers as Record<string, string>) };
+    if (sanitizedHeaders['Authorization']) {
+      sanitizedHeaders['Authorization'] = 'Bearer ••••••••';
+    }
+    console.log(`   Headers:  ${JSON.stringify(sanitizedHeaders)}`);
+  }
+  if (options.body) {
+    console.log(`   Payload:  ${JSON.stringify(sanitizePayload(options.body), null, 2)}`);
+  }
+  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+  // Abort controller for timeout
+  const controller = new AbortController();
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, timeoutMs);
+
+  let response: Response;
+  try {
+    response = await fetch(fullUrl, {
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    clearTimeout(timer);
+    const duration = Date.now() - startTime;
+    const isTimeout = err.name === 'AbortError' || err.message?.toLowerCase().includes('time');
+
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.error(`❌ [API NETWORK / TIMEOUT ERROR]`);
+    console.error(`   Endpoint: ${fullUrl}`);
+    console.error(`   Method:   ${method}`);
+    console.error(`   Duration: ${duration}ms`);
+    console.error(`   Error:    ${err.name || 'NetworkError'}: ${err.message}`);
+    if (fullUrl.includes('10.0.2.2') && Platform.OS === 'ios') {
+      console.error(`   Reason:   10.0.2.2 is an Android-only loopback IP. iOS cannot route to it.`);
+    } else if (isTimeout) {
+      console.error(`   Reason:   The request timed out after ${timeoutMs / 1000} seconds without receiving a response from the server.`);
+    }
+    console.error('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+
+  const duration = Date.now() - startTime;
+  const status = response.status;
+  const statusText = response.statusText || (response.ok ? 'OK' : 'Error');
+
+  let data: any = null;
+  const rawText = await response.text();
+  try {
+    data = JSON.parse(rawText);
+  } catch {
+    data = { raw: rawText };
+  }
+
+  // 2. Log Response Details to Terminal
+  if (response.ok) {
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log(`✅ [API RESPONSE SUCCESS]`);
+    console.log(`   Endpoint: ${fullUrl}`);
+    console.log(`   Method:   ${method}`);
+    console.log(`   Status:   ${status} ${statusText} (${duration}ms)`);
+    console.log(`   Data:     ${JSON.stringify(data, null, 2)}`);
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  } else {
+    console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.warn(`⚠️ [API RESPONSE ERROR]`);
+    console.warn(`   Endpoint: ${fullUrl}`);
+    console.warn(`   Method:   ${method}`);
+    console.warn(`   Status:   ${status} ${statusText} (${duration}ms)`);
+    console.warn(`   Data:     ${JSON.stringify(data, null, 2)}`);
+    console.warn('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  }
+
+  return {
+    status,
+    ok: response.ok,
+    data,
+  };
+}
+
 // ─── Core Fetch Wrapper ───────────────────────────────────────────────────────
 
 export async function fetchApi<T>(
@@ -43,43 +191,36 @@ export async function fetchApi<T>(
   }
   if (activeSite) headers['X-Site'] = activeSite;
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
+  const url = `${BASE_URL}${endpoint}`;
+  const { status, ok, data } = await requestWithLogging(url, {
     ...options,
     headers: { ...headers, ...(options.headers as Record<string, string> || {}) },
   });
 
-  if (response.status === 401) {
+  if (status === 401) {
     await clearToken();
     expiredHandler?.();
     throw new Error('Session expired. Please log in again.');
   }
 
-  const json = await response.json();
-  if (!response.ok || json.success === false) {
-    throw new Error(json.message || json.error || json.errors?.[0]?.msg || `API Error: ${response.status}`);
+  if (!ok || data?.success === false) {
+    throw new Error(data?.message || data?.error || data?.errors?.[0]?.msg || `API Error: ${status}`);
   }
-  return json;
+  return data;
 }
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export const authApi = {
   login: async (email: string, password: string) => {
-    const response = await fetch(`${BASE_URL}/auth/login`, {
+    const url = `${BASE_URL}/auth/login`;
+    const { status, ok, data } = await requestWithLogging(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: email.trim(), password }),
     });
 
-    const status = response.status;
-    let data: any = null;
-    try {
-      data = await response.json();
-    } catch {
-      data = { message: 'Invalid response from authentication server.' };
-    }
-
-    if (!response.ok || !data?.success) {
+    if (!ok || !data?.success) {
       const errorMsg =
         data?.message ||
         data?.error ||
@@ -360,7 +501,7 @@ export const inventoryApi = {
               drivetrain: 'FWD',
               power: '150 kW',
             },
-            site: raw.location || 'BYD Dealership',
+            site: raw.location || 'BYD Melbourne City',
             isGroupStock: false,
           };
         });

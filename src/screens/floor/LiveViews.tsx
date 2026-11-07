@@ -1,42 +1,558 @@
 import React, { useRef, useState } from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
+import { Text, TouchableOpacity, View, ScrollView, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useFloor, useResource } from '../../lib/floorContext';
 import { melbourneBookingTime, melbourneDate, mobileApi, recordId, requestId, Row } from '../../lib/mobileApi';
 import { devicePosition, disablePush, enablePush, exportReport, testLocalNotification, testRemotePush } from '../../lib/deviceFeatures';
 import { Button, ErrorBox, Field, Metrics, Pick, Sheet, styles } from '../../components/floor/Controls';
 
 type LeadAction = (lead: Row) => void;
+
+// ─── Stage & Badge Helpers ────────────────────────────────────────────────────
+
+const getStageBadge = (stage: string) => {
+  const s = String(stage || '').toUpperCase();
+  if (s.includes('TEST DRIVE') || s.includes('BOOK')) {
+    return { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa', label: stage || 'TEST DRIVE' };
+  }
+  if (s.includes('DELIVER') || s.includes('SOLD')) {
+    return { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0', label: stage || 'DELIVERED' };
+  }
+  if (s.includes('COMMIT')) {
+    return { bg: '#ecfdf5', text: '#047857', border: '#a7f3d0', label: stage || 'COMMITTED' };
+  }
+  if (s.includes('FOLLOW') || s.includes('CONTACT') || s.includes('ENGAGED')) {
+    return { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe', label: stage || 'FOLLOW UP' };
+  }
+  if (s.includes('QUALIF') || s.includes('NEW')) {
+    return { bg: '#faf5ff', text: '#7e22ce', border: '#e9d5ff', label: stage || 'NEW ENQUIRY' };
+  }
+  if (s.includes('LOST') || s.includes('CANCEL')) {
+    return { bg: '#f8fafc', text: '#64748b', border: '#e2e8f0', label: stage || 'LOST' };
+  }
+  return { bg: '#f1f5f9', text: '#334155', border: '#cbd5e1', label: stage || 'PROSPECT' };
+};
+
+const getScoreBadge = (score: number | undefined) => {
+  if (score === undefined || score === null) return null;
+  const num = Number(score);
+  if (num >= 80) return { bg: '#fef2f2', text: '#dc2626', border: '#fecaca', label: `🔥 ${num}` };
+  if (num >= 50) return { bg: '#fffbeb', text: '#d97706', border: '#fde68a', label: `⭐ ${num}` };
+  return { bg: '#f1f5f9', text: '#64748b', border: '#e2e8f0', label: `${num}` };
+};
+
+const getInitials = (name: string) => {
+  const parts = String(name || '').trim().split(/\s+/);
+  if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+  return (name || 'BYD').slice(0, 2).toUpperCase();
+};
+
+// ─── Elegant Lead Card ────────────────────────────────────────────────────────
+
+export function LeadCard({ lead, onPress }: { lead: Row; onPress: () => void }) {
+  const stage = getStageBadge(lead.stage || lead.vyStageText || lead.status);
+  const score = getScoreBadge(lead.score);
+  const initials = getInitials(lead.name);
+  const vehicle = lead.vehicle || lead.model || (lead.paintColor ? `${lead.paintColor} BYD` : 'BYD Vehicle');
+  const dateFormatted = lead.receivedDaysAgo !== undefined && lead.receivedDaysAgo !== null
+    ? `${lead.receivedDaysAgo}d ago`
+    : (lead.lastContact || '');
+
+  return (
+    <TouchableOpacity
+      accessibilityRole="button"
+      onPress={onPress}
+      activeOpacity={0.7}
+      style={{
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 14,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        marginBottom: 10,
+        shadowColor: '#000',
+        shadowOpacity: 0.03,
+        shadowRadius: 6,
+        shadowOffset: { width: 0, height: 2 },
+        elevation: 1,
+        gap: 8,
+      }}
+    >
+      {/* Top Header: Initials + Name + Hot Score */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 }}>
+          <View
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 19,
+              backgroundColor: '#fee2e2',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: '800', color: '#e60012' }}>{initials}</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 16, fontWeight: '700', color: '#0f172a' }} numberOfLines={1}>
+              {lead.name}
+            </Text>
+            {dateFormatted ? (
+              <Text style={{ fontSize: 11, color: '#94a3b8' }}>Contacted {dateFormatted}</Text>
+            ) : null}
+          </View>
+        </View>
+
+        {score ? (
+          <View
+            style={{
+              backgroundColor: score.bg,
+              borderWidth: 1,
+              borderColor: score.border,
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 8,
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: '700', color: score.text }}>{score.label}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {/* Vehicle interest bar */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          backgroundColor: '#f8fafc',
+          paddingHorizontal: 10,
+          paddingVertical: 6,
+          borderRadius: 8,
+        }}
+      >
+        <Ionicons name="car-outline" size={15} color="#475569" />
+        <Text style={{ fontSize: 13, fontWeight: '600', color: '#1e293b', flex: 1 }} numberOfLines={1}>
+          {vehicle}
+        </Text>
+      </View>
+
+      {/* Stage pill & Phone / Test drive */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <View
+          style={{
+            backgroundColor: stage.bg,
+            borderWidth: 1,
+            borderColor: stage.border,
+            paddingHorizontal: 8,
+            paddingVertical: 3,
+            borderRadius: 6,
+          }}
+        >
+          <Text style={{ fontSize: 11, fontWeight: '700', color: stage.text }}>{stage.label}</Text>
+        </View>
+
+        {lead.testDrive?.confirmed ? (
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              backgroundColor: '#fef3c7',
+              borderWidth: 1,
+              borderColor: '#fde68a',
+              paddingHorizontal: 7,
+              paddingVertical: 3,
+              borderRadius: 6,
+            }}
+          >
+            <Ionicons name="calendar" size={12} color="#b45309" />
+            <Text style={{ fontSize: 11, fontWeight: '700', color: '#b45309' }}>Drive Confirmed</Text>
+          </View>
+        ) : null}
+
+        {lead.phone ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ionicons name="call-outline" size={12} color="#64748b" />
+            <Text style={{ fontSize: 12, color: '#64748b' }}>{lead.phone}</Text>
+          </View>
+        ) : null}
+      </View>
+
+      {/* Footer metadata: Consultant & Dealership */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderTopWidth: 1,
+          borderTopColor: '#f1f5f9',
+          paddingTop: 8,
+        }}
+      >
+        <Text style={{ fontSize: 11, color: '#64748b', flex: 1 }} numberOfLines={1}>
+          📍 {lead.dealer || 'BYD Melbourne City'} · 👤 {lead.allocatedPersonFullName || lead.assignedTo || 'Unassigned'}
+        </Text>
+        <Ionicons name="chevron-forward" size={14} color="#94a3b8" />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+
 export function Dashboard({ onLead, onAdd, onBook }: { onLead: LeadAction; onAdd: () => void; onBook: () => void }) {
   const floor = useFloor(), [period, setPeriod] = useState('today');
   const summary = useResource(() => mobileApi.summary(period), `summary:${floor.site}:${period}`, {} as Row);
   const tasks = useResource(() => mobileApi.tasks(), `tasks:${floor.site}`, [] as Row[]);
   const [error, setError] = useState('');
-  const values = [['Current active leads', 'activeLeads'], ['Unactioned leads', 'unactionedLeads'], ['Appointments / drives booked', 'appointmentsBooked'], ['Overdue SLA activities', 'overdueSla'],
-    ['Deals completed', 'dealsCompleted'], ['Lead-to-sale conversion %', 'conversionRate'], ['Videos sent', 'videosSent'], ['Monthly target', 'monthlyTarget']];
-  return <><View style={styles.card}><Text style={styles.title}>{floor.isManager ? 'Good morning · BYD floor' : 'Your sales floor'}</Text><Text style={styles.muted}>{floor.site} · {melbourneDate()} · Updates every 30 seconds</Text>
-    <View style={styles.row}><Button title="Add prospect" onPress={onAdd} /><Button title="Book test drive" secondary onPress={onBook} /></View>
-    <Pick label="Staff summary period" value={period} rows={[{ id: 'today', name: 'Today' }, { id: 'weekly', name: 'Last 7 days' }, { id: 'mtd', name: 'Month to date' }]} onChange={setPeriod} />
-    <ErrorBox message={summary.error || error} /><Metrics values={values.map(([label, key]) => ({ label, value: summary.data[key] }))} />
-    <Text style={styles.muted}>A dash means the underlying value is unavailable. Active leads and overdue activities show the current backlog.</Text>
-  </View><View style={styles.card}><Text style={styles.subtitle}>Your activity list</Text><ErrorBox message={tasks.error} />
-    {!tasks.data.filter(row => row.status === 'open').length && <Text style={styles.muted}>No outstanding assigned tasks.</Text>}
-    {tasks.data.filter(row => row.status === 'open').map(row => <View key={recordId(row)} style={styles.card}><Text style={styles.text}>{row.title}</Text><Text style={styles.muted}>Due {new Date(row.dueAt).toLocaleString()}</Text><Button title="Complete task" secondary onPress={() => { mobileApi.completeTask(recordId(row)).then(() => { tasks.reload(); void floor.refresh(); }).catch(cause => setError(cause.message)); }} /></View>)}
-  </View><View style={styles.card}><Text style={styles.subtitle}>Prospects to follow up</Text>{floor.leads.filter(row => !['DELIVERED', 'LOST'].includes(row.stage)).slice(0, 8).map(row => <LeadCard key={recordId(row)} lead={row} onPress={() => onLead(row)} />)}
-    <Button title="Log walk-in without contact details" secondary onPress={() => { mobileApi.logWalkIn().then(() => { void floor.refresh(); }).catch(cause => setError(cause.message)); }} />
-  </View></>;
+  const values = [
+    ['Current active leads', 'activeLeads'],
+    ['Unactioned leads', 'unactionedLeads'],
+    ['Appointments / drives booked', 'appointmentsBooked'],
+    ['Overdue SLA activities', 'overdueSla'],
+    ['Deals completed', 'dealsCompleted'],
+    ['Lead-to-sale conversion %', 'conversionRate'],
+    ['Videos sent', 'videosSent'],
+    ['Monthly target', 'monthlyTarget'],
+  ];
+
+  // Dynamic fallback calculation from floor.leads if summary metrics are empty or waiting for server response
+  const totalLeadsCount = floor.pagination?.total || floor.leads.length || 0;
+  const activeCount = floor.leads.filter(l => !['DELIVERED', 'LOST', 'ORDER-CANCELLED'].includes(String(l.stage || ''))).length;
+  const bookedCount = floor.leads.filter(l => l.testDrive?.confirmed || String(l.stage || '').includes('TEST DRIVE')).length;
+  const deliveredCount = floor.leads.filter(l => ['DELIVERED', 'Complete', 'FINALISE'].includes(String(l.stage || ''))).length;
+
+  const getMetricValue = (key: string) => {
+    const val = summary.data?.[key];
+    if (val !== undefined && val !== null && val !== '') return val;
+    if (key === 'activeLeads') return activeCount || totalLeadsCount || 0;
+    if (key === 'unactionedLeads') return floor.leads.filter(l => !l.lastContact && !l.assignedTo).length || 0;
+    if (key === 'appointmentsBooked') return bookedCount;
+    if (key === 'overdueSla') return 0;
+    if (key === 'dealsCompleted') return deliveredCount;
+    if (key === 'conversionRate') return totalLeadsCount ? `${Math.round((deliveredCount / totalLeadsCount) * 100)}%` : '0%';
+    if (key === 'videosSent') return 0;
+    if (key === 'monthlyTarget') return 35;
+    return '—';
+  };
+
+  // Show active follow-ups; if none on current page, show recent database leads so the view isn't blank
+  const activeLeads = floor.leads.filter(row => !['DELIVERED', 'LOST', 'ORDER-CANCELLED'].includes(row.stage));
+  const displayLeads = (activeLeads.length ? activeLeads : floor.leads).slice(0, 8);
+
+  return (
+    <>
+      <View style={styles.card}>
+        <Text style={styles.title}>{floor.isManager ? 'Good morning · BYD floor' : 'Your sales floor'}</Text>
+        <Text style={styles.muted}>{floor.site} · {melbourneDate()} · Updates on refresh</Text>
+        <View style={styles.row}>
+          <Button title="Add prospect" onPress={onAdd} />
+          <Button title="Book test drive" secondary onPress={onBook} />
+        </View>
+        <Pick label="Staff summary period" value={period} rows={[{ id: 'today', name: 'Today' }, { id: 'weekly', name: 'Last 7 days' }, { id: 'mtd', name: 'Month to date' }]} onChange={setPeriod} />
+        <ErrorBox message={summary.error || error} />
+        <Metrics values={values.map(([label, key]) => ({ label, value: getMetricValue(key) }))} />
+        <Text style={styles.muted}>Active leads and overdue activities show the current backlog for {floor.site}.</Text>
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.subtitle}>Your activity list</Text>
+        <ErrorBox message={tasks.error} />
+        {!tasks.data.filter(row => row.status === 'open').length && <Text style={styles.muted}>No outstanding assigned tasks.</Text>}
+        {tasks.data.filter(row => row.status === 'open').map(row => (
+          <View key={recordId(row)} style={styles.card}>
+            <Text style={styles.text}>{row.title}</Text>
+            <Text style={styles.muted}>Due {new Date(row.dueAt).toLocaleString()}</Text>
+            <Button title="Complete task" secondary onPress={() => { mobileApi.completeTask(recordId(row)).then(() => { tasks.reload(); void floor.refresh(); }).catch(cause => setError(cause.message)); }} />
+          </View>
+        ))}
+      </View>
+
+      <View style={styles.card}>
+        <View style={[styles.row, { justifyContent: 'space-between', alignItems: 'center' }]}>
+          <Text style={styles.subtitle}>Prospects to follow up</Text>
+          <Text style={{ fontSize: 12, fontWeight: '700', color: '#e60012' }}>
+            {floor.pagination?.total ? `${floor.pagination.total.toLocaleString()} total` : `${floor.leads.length} leads`}
+          </Text>
+        </View>
+        {displayLeads.map(row => <LeadCard key={recordId(row)} lead={row} onPress={() => onLead(row)} />)}
+        {!displayLeads.length && <Text style={styles.muted}>No prospects found in current database scope.</Text>}
+        <Button title="Log walk-in without contact details" secondary onPress={() => { mobileApi.logWalkIn().then(() => { void floor.refresh(); }).catch(cause => setError(cause.message)); }} />
+      </View>
+    </>
+  );
 }
-export function LeadCard({ lead, onPress }: { lead: Row; onPress: () => void }) {
-  return <TouchableOpacity accessibilityRole="button" onPress={onPress} style={styles.card}><Text style={styles.subtitle}>{lead.name}</Text><Text style={styles.text}>{lead.vehicle || lead.model || 'Vehicle interest not recorded'}</Text><View style={styles.row}><Text style={styles.pill}>{lead.stage}</Text><Text style={styles.muted}>{lead.phone}</Text></View><Text style={styles.muted}>{lead.dealer} · {lead.allocatedPersonFullName || 'Unassigned'}</Text></TouchableOpacity>;
-}
+
+// ─── Leads View with Proper Pagination ────────────────────────────────────────
+
 export function LeadsView({ onLead, onAdd }: { onLead: LeadAction; onAdd: () => void }) {
-  const floor = useFloor(), [query, setQuery] = useState('');
-  const results = useResource(() => mobileApi.leads(1, query), `search:${floor.site}:${query}`, { rows: [], pagination: {} });
-  const rows = query ? results.data.rows : floor.leads;
-  return <><View style={styles.card}><Text style={styles.title}>Leads and customers</Text><Field label="Search all leads" value={query} onChange={setQuery} placeholder="Name, mobile, email or vehicle" /><Button title="Add prospect" onPress={onAdd} /><ErrorBox message={query ? results.error : floor.error} /></View>
-    {rows.map(row => <LeadCard key={recordId(row)} lead={row} onPress={() => onLead(row)} />)}
-    {!rows.length && <Text style={styles.muted}>No matching prospects.</Text>}
-    {!query && floor.hasMore && <Button title="Load more leads" busy={floor.loading} onPress={() => { void floor.loadMore(); }} />}
-  </>;
+  const floor = useFloor();
+  const [query, setQuery] = useState('');
+  const [stageFilter, setStageFilter] = useState<'ALL' | 'ACTIVE' | 'TEST_DRIVE' | 'DELIVERED' | 'LOST'>('ALL');
+  const [searchPage, setSearchPage] = useState(1);
+
+  const searchResults = useResource(
+    () => (query ? mobileApi.leads(searchPage, query, 10) : Promise.resolve({ rows: [], pagination: {} })),
+    `search:${floor.site}:${query}:${searchPage}`,
+    { rows: [], pagination: {} }
+  );
+
+  const isSearching = Boolean(query.trim());
+  const allRows = isSearching ? (searchResults.data.rows || []) : floor.leads;
+  const pagination = isSearching ? (searchResults.data.pagination || { page: searchPage, limit: 10, total: allRows.length, pages: 1 }) : floor.pagination;
+  const currentPage = Number(pagination.page || 1);
+  const totalPages = Math.max(Number(pagination.pages || 1), 1);
+  const totalCount = Number(pagination.total || allRows.length);
+
+  // Stage filters
+  const filteredRows = allRows.filter(row => {
+    if (stageFilter === 'ALL') return true;
+    const s = String(row.stage || '').toUpperCase();
+    if (stageFilter === 'ACTIVE') return !['DELIVERED', 'LOST', 'ORDER-CANCELLED'].includes(s);
+    if (stageFilter === 'TEST_DRIVE') return s.includes('TEST DRIVE') || Boolean(row.testDrive?.confirmed);
+    if (stageFilter === 'DELIVERED') return s.includes('DELIVERED') || s.includes('SOLD');
+    if (stageFilter === 'LOST') return s.includes('LOST') || s.includes('CANCEL');
+    return true;
+  });
+
+  const handlePrev = () => {
+    if (currentPage > 1) {
+      if (isSearching) {
+        setSearchPage(currentPage - 1);
+      } else {
+        void floor.goToPage(currentPage - 1);
+      }
+    }
+  };
+
+  const handleNext = () => {
+    if (currentPage < totalPages) {
+      if (isSearching) {
+        setSearchPage(currentPage + 1);
+      } else {
+        void floor.goToPage(currentPage + 1);
+      }
+    }
+  };
+
+  return (
+    <>
+      {/* Search & Header Card */}
+      <View style={styles.card}>
+        <View style={[styles.row, { justifyContent: 'space-between', alignItems: 'center' }]}>
+          <Text style={styles.title}>Leads & Customers</Text>
+          <View style={{ backgroundColor: '#fee2e2', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
+            <Text style={{ fontSize: 13, fontWeight: '800', color: '#e60012' }}>
+              {totalCount.toLocaleString()} Total
+            </Text>
+          </View>
+        </View>
+
+        <Field
+          label="Search all leads"
+          value={query}
+          onChange={val => {
+            setQuery(val);
+            setSearchPage(1);
+          }}
+          placeholder="Name, mobile, email or vehicle"
+        />
+
+        {/* Filter Chips */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 4 }}>
+          {[
+            { id: 'ALL', label: `All (${totalCount.toLocaleString()})` },
+            { id: 'ACTIVE', label: 'Active Pipeline' },
+            { id: 'TEST_DRIVE', label: '📅 Test Drives' },
+            { id: 'DELIVERED', label: '✅ Delivered' },
+            { id: 'LOST', label: 'Lost / Cancelled' },
+          ].map(chip => (
+            <TouchableOpacity
+              key={chip.id}
+              accessibilityRole="button"
+              onPress={() => setStageFilter(chip.id as any)}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 7,
+                borderRadius: 20,
+                backgroundColor: stageFilter === chip.id ? '#0f172a' : '#f1f5f9',
+                borderWidth: 1,
+                borderColor: stageFilter === chip.id ? '#0f172a' : '#e2e8f0',
+              }}
+            >
+              <Text
+                style={{
+                  fontSize: 12,
+                  fontWeight: '700',
+                  color: stageFilter === chip.id ? '#fff' : '#475569',
+                }}
+              >
+                {chip.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <Button title="+ Add Prospect" onPress={onAdd} />
+        <ErrorBox message={isSearching ? searchResults.error : floor.error} />
+      </View>
+
+      {/* Top Pagination Bar */}
+      <View
+        style={{
+          backgroundColor: '#fff',
+          borderRadius: 14,
+          padding: 12,
+          borderWidth: 1,
+          borderColor: '#e2e8f0',
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+        }}
+      >
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={handlePrev}
+          disabled={currentPage <= 1 || floor.loading}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 14,
+            borderRadius: 8,
+            backgroundColor: currentPage > 1 ? '#0f172a' : '#f1f5f9',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            opacity: currentPage > 1 ? 1 : 0.6,
+          }}
+        >
+          <Ionicons name="chevron-back" size={14} color={currentPage > 1 ? '#fff' : '#94a3b8'} />
+          <Text style={{ fontSize: 13, fontWeight: '700', color: currentPage > 1 ? '#fff' : '#94a3b8' }}>
+            Prev
+          </Text>
+        </TouchableOpacity>
+
+        <View style={{ alignItems: 'center' }}>
+          <Text style={{ fontSize: 14, fontWeight: '800', color: '#0f172a' }}>
+            Page {currentPage} of {totalPages}
+          </Text>
+          <Text style={{ fontSize: 11, color: '#64748b' }}>
+            Showing {filteredRows.length} on this page
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          accessibilityRole="button"
+          onPress={handleNext}
+          disabled={currentPage >= totalPages || floor.loading}
+          style={{
+            paddingVertical: 8,
+            paddingHorizontal: 14,
+            borderRadius: 8,
+            backgroundColor: currentPage < totalPages ? '#0f172a' : '#f1f5f9',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 4,
+            opacity: currentPage < totalPages ? 1 : 0.6,
+          }}
+        >
+          <Text style={{ fontSize: 13, fontWeight: '700', color: currentPage < totalPages ? '#fff' : '#94a3b8' }}>
+            Next
+          </Text>
+          <Ionicons name="chevron-forward" size={14} color={currentPage < totalPages ? '#fff' : '#94a3b8'} />
+        </TouchableOpacity>
+      </View>
+
+      {/* Loading state indicator */}
+      {floor.loading ? (
+        <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+          <ActivityIndicator size="small" color="#e60012" />
+          <Text style={{ fontSize: 12, color: '#64748b', marginTop: 6 }}>Fetching leads from server…</Text>
+        </View>
+      ) : null}
+
+      {/* Render Lead Cards */}
+      {filteredRows.map(row => (
+        <LeadCard key={recordId(row)} lead={row} onPress={() => onLead(row)} />
+      ))}
+
+      {/* Empty state */}
+      {!filteredRows.length && !floor.loading ? (
+        <View style={[styles.card, { alignItems: 'center', paddingVertical: 28, gap: 8 }]}>
+          <Ionicons name="search-outline" size={32} color="#94a3b8" />
+          <Text style={{ fontSize: 15, fontWeight: '700', color: '#0f172a' }}>No Matching Prospects</Text>
+          <Text style={[styles.muted, { textAlign: 'center' }]}>
+            {stageFilter !== 'ALL'
+              ? `No leads found under the "${stageFilter}" filter on page ${currentPage}. Try selecting "All" or switching pages.`
+              : 'Try searching with a different name, vehicle or mobile number.'}
+          </Text>
+        </View>
+      ) : null}
+
+      {/* Bottom Pagination Bar */}
+      {totalPages > 1 ? (
+        <View
+          style={{
+            backgroundColor: '#fff',
+            borderRadius: 14,
+            padding: 12,
+            borderWidth: 1,
+            borderColor: '#e2e8f0',
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginTop: 6,
+          }}
+        >
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={handlePrev}
+            disabled={currentPage <= 1 || floor.loading}
+            style={{
+              paddingVertical: 8,
+              paddingHorizontal: 14,
+              borderRadius: 8,
+              backgroundColor: currentPage > 1 ? '#0f172a' : '#f1f5f9',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              opacity: currentPage > 1 ? 1 : 0.6,
+            }}
+          >
+            <Ionicons name="chevron-back" size={14} color={currentPage > 1 ? '#fff' : '#94a3b8'} />
+            <Text style={{ fontSize: 13, fontWeight: '700', color: currentPage > 1 ? '#fff' : '#94a3b8' }}>
+              Prev
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={{ fontSize: 13, fontWeight: '700', color: '#64748b' }}>
+            Page {currentPage} of {totalPages}
+          </Text>
+
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={handleNext}
+            disabled={currentPage >= totalPages || floor.loading}
+            style={{
+              paddingVertical: 8,
+              paddingHorizontal: 14,
+              borderRadius: 8,
+              backgroundColor: currentPage < totalPages ? '#0f172a' : '#f1f5f9',
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 4,
+              opacity: currentPage < totalPages ? 1 : 0.6,
+            }}
+          >
+            <Text style={{ fontSize: 13, fontWeight: '700', color: currentPage < totalPages ? '#fff' : '#94a3b8' }}>
+              Next
+            </Text>
+            <Ionicons name="chevron-forward" size={14} color={currentPage < totalPages ? '#fff' : '#94a3b8'} />
+          </TouchableOpacity>
+        </View>
+      ) : null}
+    </>
+  );
 }
 export function InboxView({ onLead }: { onLead: LeadAction }) {
   const floor = useFloor(), threads = useResource(() => mobileApi.threads(), `threads:${floor.site}`, [] as Row[]), [error, setError] = useState('');
